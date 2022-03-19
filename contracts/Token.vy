@@ -18,25 +18,40 @@ event Approval:
 balances: HashMap[address, uint256]
 allowance_mapping: HashMap[address, HashMap[address, uint256]]
 
-@view
-@external
-def name() -> String[100]:
-    return "MyToken"
+name: String[100]
+symbol: String[5]
+decimals: uint8
+totalSupply: uint256
 
-@view
 @external
-def symbol() -> String[5]:
-    return "MTK"
+def __init__(_name: String[100], _symbol: String[5], _decimals: uint8, _totalSupply: uint256):
+    self.name = _name
+    self.symbol = _symbol
+    self.decimals = _decimals
+    self.totalSupply = _totalSupply * 10** convert(_decimals, uint256)
+    self.balances[msg.sender] = self.totalSupply
+    log Transfer(ZERO_ADDRESS, msg.sender, self.totalSupply)
 
-@view
-@external
-def decimals() -> uint8:
-    return 8
 
-@view
-@external
-def totalSupply() -> uint256:
-    return 10**6 * 10**8
+# @view
+# @external
+# def name() -> String[100]:
+#     return "MyToken"
+
+# @view
+# @external
+# def symbol() -> String[5]:
+#     return "MTK"
+
+# @view
+# @external
+# def decimals() -> uint8:
+#     return 8
+
+# @view
+# @external
+# def totalSupply() -> uint256:
+#     return 10**6 * 10**8
 
 
 @view
