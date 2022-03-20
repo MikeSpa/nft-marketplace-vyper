@@ -34,7 +34,7 @@ def test_total_supply(token_contract):
 
 def test_initial_balance(token_contract):
     account = get_account()
-    assert token_contract.balances(account) == TOTAL_SUPPLY
+    assert token_contract.balanceOf(account) == TOTAL_SUPPLY
 
 
 def test_transfer(token_contract, _value=100):
