@@ -1,9 +1,10 @@
-
 # Token
 # Implementation of https://eips.ethereum.org/EIPS/eip-20
 
 # @version 0.3.1
 
+from vyper.interfaces import ERC20
+implements: ERC20
 
 event Transfer:
     _from: indexed(address)
@@ -33,21 +34,13 @@ def __init__(_name: String[100], _symbol: String[5], _decimals: uint8, _totalSup
     log Transfer(ZERO_ADDRESS, msg.sender, self.totalSupply)
 
 
-
-
-# @view
-# @external
-# def balanceOf(_owner: address) -> uint256:
-#     owner_balance: uint256 = self.balanceOf[_owner]
-#     return owner_balance
-    
-
 @external
 def transfer(_to: address, _value: uint256) -> bool:
     self.balanceOf[msg.sender] -= _value
     self.balanceOf[_to] += _value
     log Transfer(msg.sender, _to, _value)
     return True
+
 
 @external 
 def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
@@ -63,4 +56,3 @@ def approve(_spender: address, _value: uint256) -> bool:
     self.allowance[msg.sender][_spender] = _value
     log Approval(msg.sender, _spender, _value)
     return True
-
