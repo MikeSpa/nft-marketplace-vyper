@@ -63,6 +63,86 @@ def test_transfer_revert_if_insufficient_supply(token_contract, _value=100):
         token_contract.transfer(acc3, _value * 2, {"from": acc2})
 
 
+def test_approve(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+
+    assert token_contract.approve(acc2, _value, {"from": account})
+    assert token_contract.allowance(account, acc2) == _value
+
+
+def test_allowance(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    acc3 = get_account(index=3)
+
+    assert token_contract.approve(acc2, _value, {"from": account})
+    assert token_contract.allowance(account, acc2) == _value
+    assert token_contract.allowance(account, acc3) == 0
+
+
+def test_transferFrom(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    acc3 = get_account(index=2)
+
+    # approve
+    token_contract.approve(acc2, _value, {"from": account})
+    token_contract.transferFrom(account, acc2, _value, {"from": acc2})
+
+    assert token_contract.balanceOf(acc2) == _value
+
+
+def test_transferFrom_revert_if_not_enough_allowance(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    acc3 = get_account(index=2)
+
+    # approve
+    token_contract.approve(acc2, _value / 2, {"from": account})
+
+    with brownie.reverts():
+        token_contract.transferFrom(account, acc2, _value, {"from": acc2})
+
+
+def test_transferFrom_revert_if_not_enough_balance(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    acc3 = get_account(index=2)
+
+    token_contract.transfer(acc2, _value, {"from": account})
+    # approve
+    token_contract.approve(account, 2 * _value, {"from": acc2})
+
+    token_contract.transferFrom(acc2, account, _value, {"from": account})
+
+    with brownie.reverts():
+        token_contract.transferFrom(acc2, account, _value, {"from": account})
+
+
+def test_event_transfer(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    tx = token_contract.transfer(acc2, _value, {"from": account})
+
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == account
+    assert tx.events[0]["_to"] == acc2
+    assert tx.events[0]["_value"] == _value
+
+
+def test_event_transferFrom(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    token_contract.approve(acc2, _value, {"from": account})
+    tx = token_contract.transferFrom(account, acc2, _value, {"from": acc2})
+
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == account
+    assert tx.events[0]["_to"] == acc2
+    assert tx.events[0]["_value"] == _value
+
+
 # def test_
 
 

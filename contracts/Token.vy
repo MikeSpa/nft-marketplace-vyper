@@ -16,7 +16,7 @@ event Approval:
     _value: uint256
 
 balances: public(HashMap[address, uint256])
-allowance_mapping: public(HashMap[address, HashMap[address, uint256]])
+allowance: public(HashMap[address, HashMap[address, uint256]])
 
 name: public(String[100])
 symbol: public(String[5])
@@ -33,25 +33,6 @@ def __init__(_name: String[100], _symbol: String[5], _decimals: uint8, _totalSup
     log Transfer(ZERO_ADDRESS, msg.sender, self.totalSupply)
 
 
-# @view
-# @external
-# def name() -> String[100]:
-#     return "MyToken"
-
-# @view
-# @external
-# def symbol() -> String[5]:
-#     return "MTK"
-
-# @view
-# @external
-# def decimals() -> uint8:
-#     return 8
-
-# @view
-# @external
-# def totalSupply() -> uint256:
-#     return 10**6 * 10**8
 
 
 @view
@@ -63,37 +44,23 @@ def balanceOf(_owner: address) -> uint256:
 
 @external
 def transfer(_to: address, _value: uint256) -> bool:
-    #may actually reverrt du to underflow if not enough balance
-    # so check unnecessary? need to test TODO
-    # same for transferFrom
-    # if (self.balances[msg.sender] >= _value):
     self.balances[msg.sender] -= _value
     self.balances[_to] += _value
     log Transfer(msg.sender, _to, _value)
     return True
-    # return False
 
 @external 
 def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
-    # allowed: bool = True 
-    # if (_value <= self.allowance_mapping[_from][msg.sender]):
-    # allowed = True
-    # if ( allowed and self.balances[_from] >= _value):
     self.balances[_from] -= _value
-    self.allowance_mapping[_from][msg.sender] -= _value
+    self.allowance[_from][msg.sender] -= _value
     self.balances[_to] += _value
     log Transfer(_from, _to, _value)
     return True
-    # return False
 
 
 @external
 def approve(_spender: address, _value: uint256) -> bool:
-    self.allowance_mapping[msg.sender][_spender] = _value
+    self.allowance[msg.sender][_spender] = _value
     log Approval(msg.sender, _spender, _value)
     return True
 
-@view
-@external
-def allowance(_owner: address, _spender: address) -> uint256:
-    return self.allowance_mapping[_owner][_spender]
