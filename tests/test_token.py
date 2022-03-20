@@ -1,5 +1,6 @@
 import pytest
 from scripts.helpful_scripts import get_account
+import brownie
 
 
 NAME = "MyToken"
@@ -29,6 +30,37 @@ def test_contract_decimals(token_contract):
 
 def test_total_supply(token_contract):
     assert token_contract.totalSupply() == TOTAL_SUPPLY
+
+
+def test_initial_balance(token_contract):
+    account = get_account()
+    assert token_contract.balances(account) == TOTAL_SUPPLY
+
+
+def test_transfer(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    acc3 = get_account(index=2)
+    token_contract.transfer(acc2, _value, {"from": account})
+    assert token_contract.balanceOf(account) == TOTAL_SUPPLY - _value
+    assert token_contract.balanceOf(acc2) == _value
+
+    token_contract.transfer(acc3, _value, {"from": acc2})
+    assert token_contract.balanceOf(account) == TOTAL_SUPPLY - _value
+    assert token_contract.balanceOf(acc2) == 0
+    assert token_contract.balanceOf(acc3) == _value
+
+
+def test_transfer_revert_if_insufficient_supply(token_contract, _value=100):
+    account = get_account()
+    acc2 = get_account(index=1)
+    acc3 = get_account(index=2)
+    token_contract.transfer(acc2, _value, {"from": account})
+    assert token_contract.balanceOf(account) == TOTAL_SUPPLY - _value
+    assert token_contract.balanceOf(acc2) == _value
+
+    with brownie.reverts():
+        token_contract.transfer(acc3, _value * 2, {"from": acc2})
 
 
 # def test_

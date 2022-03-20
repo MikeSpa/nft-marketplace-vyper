@@ -15,8 +15,8 @@ event Approval:
     spender: indexed(address)
     _value: uint256
 
-balances: HashMap[address, uint256]
-allowance_mapping: HashMap[address, HashMap[address, uint256]]
+balances: public(HashMap[address, uint256])
+allowance_mapping: public(HashMap[address, HashMap[address, uint256]])
 
 name: public(String[100])
 symbol: public(String[5])
@@ -66,25 +66,25 @@ def transfer(_to: address, _value: uint256) -> bool:
     #may actually reverrt du to underflow if not enough balance
     # so check unnecessary? need to test TODO
     # same for transferFrom
-    if (self.balances[msg.sender] >= _value):
-        self.balances[msg.sender] -= _value
-        self.balances[_to] += _value
-        log Transfer(msg.sender, _to, _value)
-        return True
-    return False
+    # if (self.balances[msg.sender] >= _value):
+    self.balances[msg.sender] -= _value
+    self.balances[_to] += _value
+    log Transfer(msg.sender, _to, _value)
+    return True
+    # return False
 
 @external 
 def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
-    allowed: bool = True 
-    if (_value <= self.allowance_mapping[_from][msg.sender]):
-        allowed = True
-    if ( allowed and self.balances[_from] >= _value):
-        self.balances[_from] -= _value
-        self.allowance_mapping[_from][msg.sender] -= _value
-        self.balances[_to] += _value
-        log Transfer(_from, _to, _value)
-        return True
-    return False
+    # allowed: bool = True 
+    # if (_value <= self.allowance_mapping[_from][msg.sender]):
+    # allowed = True
+    # if ( allowed and self.balances[_from] >= _value):
+    self.balances[_from] -= _value
+    self.allowance_mapping[_from][msg.sender] -= _value
+    self.balances[_to] += _value
+    log Transfer(_from, _to, _value)
+    return True
+    # return False
 
 
 @external
