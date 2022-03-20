@@ -18,10 +18,10 @@ event Approval:
 balances: HashMap[address, uint256]
 allowance_mapping: HashMap[address, HashMap[address, uint256]]
 
-name: String[100]
-symbol: String[5]
-decimals: uint8
-totalSupply: uint256
+name: public(String[100])
+symbol: public(String[5])
+decimals: public(uint8)
+totalSupply: public(uint256)
 
 @external
 def __init__(_name: String[100], _symbol: String[5], _decimals: uint8, _totalSupply: uint256):
