@@ -22,6 +22,7 @@ event ApprovalForAll:
 
 ownerToCount: public(HashMap[address, uint256])
 idToOwner: public(HashMap[uint256, address])
+idToApproved: public(HashMap[uint256, address])
 
 @view
 @external
@@ -36,7 +37,7 @@ def ownerOf(_tokenId: uint256) -> address:
 @view
 @external
 def getApproved(_tokenId: uint256) -> address:
-    return ZERO_ADDRESS
+    return self.idToApproved[_tokenId]
 
 @view
 @external
@@ -64,7 +65,11 @@ def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Byt
 
 @external
 def approve(_approved: address, _tokenId: uint256):
-    pass
+    assert msg.sender == self.idToOwner[_tokenId]
+    self.idToApproved[_tokenId] = _approved
+    log Approval(msg.sender, _approved, _tokenId)
+
+
 
 @external
 def setApprovalForAll(_operator: address, _approved: bool):
