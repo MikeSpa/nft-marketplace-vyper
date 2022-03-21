@@ -78,8 +78,8 @@ def _transfer(_from: address, _to: address, _tokenId: uint256):
     assert _tokenId <= self.supply, "token doesn't exist" #TODO should be < except for mint
     self.idToOwner[_tokenId] = _to
     self.idToApproved[_tokenId] = ZERO_ADDRESS
-    self.ownerToCount[_from] -= 1
-    self.ownerToCount[_from] += 1
+    # self.ownerToCount[_from] -= 1
+    self.ownerToCount[_to] += 1
     log Transfer(_from, _to, _tokenId)
 
 
