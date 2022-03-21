@@ -74,8 +74,8 @@ def isApprovedForAll(_owner: address, _operator: address) -> bool:
 
 @internal
 def _transfer(_from: address, _to: address, _tokenId: uint256):
-    assert _to != ZERO_ADDRESS
-    assert _tokenId <= self.supply #TODO should be < except for mint
+    assert _to != ZERO_ADDRESS, "can't transfer to null address"
+    assert _tokenId <= self.supply, "token doesn't exist" #TODO should be < except for mint
     self.idToOwner[_tokenId] = _to
     self.idToApproved[_tokenId] = ZERO_ADDRESS
     self.ownerToCount[_from] -= 1
