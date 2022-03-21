@@ -49,47 +49,51 @@ def __init__(_name: String[100], _symbol: String[5], _mintPrice: uint256):
     self.supply = 0
 
 
-
-
 @view
 @external
 def balanceOf(_owner: address) -> uint256:
     return self.ownerToCount[_owner]
+
 
 @view
 @external
 def ownerOf(_tokenId: uint256) -> address:
     return self.idToOwner[_tokenId]
 
+
 @view
 @external
 def getApproved(_tokenId: uint256) -> address:
     return self.idToApproved[_tokenId]
+
 
 @view
 @external
 def isApprovedForAll(_owner: address, _operator: address) -> bool:
     return False
 
+
 @internal
 def _addToken(_to: address, _tokenId: uint256):
-    assert _to != ZERO_ADDRESS, "can't transfer to null address"
+    assert _to != ZERO_ADDRESS, "Can't transfer to null address"
     self.idToOwner[_tokenId] = _to
     self.idToApproved[_tokenId] = ZERO_ADDRESS
     self.ownerToCount[_to] += 1
     self.supply += 1
 
+
 @internal
 def _removeToken(_from: address, _tokenId: uint256):
-    #assert owner of token here?
+    assert _from == self.idToOwner[_tokenId], "Not owner of the token"
     self.idToOwner[_tokenId] = ZERO_ADDRESS
     self.ownerToCount[_from] -= 1
     self.supply -= 1
 
+
 @internal
 def _transfer(_from: address, _to: address, _tokenId: uint256):
-    assert _to != ZERO_ADDRESS, "can't transfer to null address"
-    assert _tokenId <= self.supply, "token doesn't exist" #TODO should be < except for mint
+    assert _to != ZERO_ADDRESS, "Can't transfer to null address"
+    assert _tokenId < self.supply, "Token doesn't exist"
     self._removeToken(_from, _tokenId)
     self._addToken(_to, _tokenId)
     log Transfer(_from, _to, _tokenId)
@@ -101,11 +105,11 @@ def transferFrom(_from: address, _to: address, _tokenId: uint256):
     
     self._transfer(_from, _to, _tokenId)
 
-
     
 # implements: ERC721 throws an error if both fct are present?
 # @external
 # def safeTransferFrom(_from: address, _to: address, _tokenId: uint256):
+
 
 @external
 def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]):
@@ -117,6 +121,7 @@ def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Byt
         # need to be equal to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
         ERC721Receiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data)
 
+
 @external
 def approve(_approved: address, _tokenId: uint256):
     assert msg.sender == self.idToOwner[_tokenId]
@@ -124,10 +129,10 @@ def approve(_approved: address, _tokenId: uint256):
     log Approval(msg.sender, _approved, _tokenId)
 
 
-
 @external
 def setApprovalForAll(_operator: address, _approved: bool):
     pass
+
 
 @view
 @external
@@ -146,4 +151,3 @@ def setMintPrice(_newPrice: uint256):
 def mint():
     assert msg.value >= self.mintPrice
     self._addToken(msg.sender, self.supply)
-
