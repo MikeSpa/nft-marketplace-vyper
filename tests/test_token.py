@@ -141,21 +141,3 @@ def test_event_transferFrom(token_contract, _value=100):
     assert tx.events[0]["_from"] == account
     assert tx.events[0]["_to"] == acc2
     assert tx.events[0]["_value"] == _value
-
-
-# def test_
-
-
-# def test_events(adv_storage_contract, accounts):
-#     tx1 = adv_storage_contract.set(10, {'from': accounts[0])
-#     tx2 = adv_storage_contract.set(20, {'from': accounts[1])
-#     tx3 = adv_storage_contract.reset({'from': accounts[0])
-
-#     # Check log contents
-#     assert len(tx1.events) == 1
-#     assert tx1.events[0]['value'] == 10
-
-#     assert len(tx2.events) == 1
-#     assert tx2.events[0]['setter'] == accounts[1]
-
-#     assert not tx3.events
