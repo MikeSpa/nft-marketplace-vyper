@@ -71,15 +71,27 @@ def getApproved(_tokenId: uint256) -> address:
 def isApprovedForAll(_owner: address, _operator: address) -> bool:
     return False
 
+@internal
+def _addToken(_to: address, _tokenId: uint256):
+    assert _to != ZERO_ADDRESS, "can't transfer to null address"
+    self.idToOwner[_tokenId] = _to
+    self.idToApproved[_tokenId] = ZERO_ADDRESS
+    self.ownerToCount[_to] += 1
+    self.supply += 1
+
+@internal
+def _removeToken(_from: address, _tokenId: uint256):
+    #assert owner of token here?
+    self.idToOwner[_tokenId] = ZERO_ADDRESS
+    self.ownerToCount[_from] -= 1
+    self.supply -= 1
 
 @internal
 def _transfer(_from: address, _to: address, _tokenId: uint256):
     assert _to != ZERO_ADDRESS, "can't transfer to null address"
     assert _tokenId <= self.supply, "token doesn't exist" #TODO should be < except for mint
-    self.idToOwner[_tokenId] = _to
-    self.idToApproved[_tokenId] = ZERO_ADDRESS
-    # self.ownerToCount[_from] -= 1
-    self.ownerToCount[_to] += 1
+    self._removeToken(_from, _tokenId)
+    self._addToken(_to, _tokenId)
     log Transfer(_from, _to, _tokenId)
 
 
@@ -133,6 +145,5 @@ def setMintPrice(_newPrice: uint256):
 @external
 def mint():
     assert msg.value >= self.mintPrice
-    self._transfer(ZERO_ADDRESS, msg.sender, self.supply)
-    self.supply+=1
+    self._addToken(msg.sender, self.supply)
 
