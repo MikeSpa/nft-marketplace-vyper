@@ -46,13 +46,19 @@ def test_mint(nftoken_contract):
     assert nftoken_contract.supply() == 1
 
     nftoken_contract.mint({"value": ONE})
-    nftoken_contract.mint({"value": ONE})
+    tx = nftoken_contract.mint({"value": ONE})
     assert nftoken_contract.balanceOf(account) == 3
     assert nftoken_contract.ownerOf(0) == account
     assert nftoken_contract.ownerOf(1) == account
     assert nftoken_contract.ownerOf(2) == account
     assert nftoken_contract.getApproved(1) == ZERO_ADDRESS
     assert nftoken_contract.supply() == 3
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == ZERO_ADDRESS
+    assert tx.events[0]["_to"] == account
+    assert tx.events[0]["_tokenId"] == 2
 
 
 def test_mint_revert_if_value_lower_than_price(nftoken_contract):
@@ -62,6 +68,7 @@ def test_mint_revert_if_value_lower_than_price(nftoken_contract):
 
 
 def test_approve(nftoken_contract):
+    account = get_account()
     acc1 = get_account(index=1)
     acc2 = get_account(index=2)
     nftoken_contract.mint({"value": ONE})
@@ -70,10 +77,16 @@ def test_approve(nftoken_contract):
     assert nftoken_contract.getApproved(0) == ZERO_ADDRESS
     nftoken_contract.approve(acc1, 0)
     nftoken_contract.approve(acc1, 1)
-    nftoken_contract.approve(acc2, 2)
+    tx = nftoken_contract.approve(acc2, 2)
     assert nftoken_contract.getApproved(0) == acc1
     assert nftoken_contract.getApproved(1) == acc1
     assert nftoken_contract.getApproved(2) == acc2
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_owner"] == account
+    assert tx.events[0]["_approved"] == acc2
+    assert tx.events[0]["_tokenId"] == 2
 
 
 def test_approve_revert_if_not_owner(nftoken_contract):
@@ -106,11 +119,17 @@ def test_transferFrom(nftoken_contract):
 
     nftoken_contract.transferFrom(account, acc1, 1)
     nftoken_contract.transferFrom(account, acc2, 2)
-    nftoken_contract.transferFrom(acc1, acc2, 1, {"from": acc1})
+    tx = nftoken_contract.transferFrom(acc1, acc2, 1, {"from": acc1})
 
     assert nftoken_contract.ownerOf(0) == account
     assert nftoken_contract.ownerOf(1) == acc2
     assert nftoken_contract.ownerOf(2) == acc2
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == acc1
+    assert tx.events[0]["_to"] == acc2
+    assert tx.events[0]["_tokenId"] == 1
 
 
 def test_transferFrom_revert_if_not_owner(nftoken_contract):

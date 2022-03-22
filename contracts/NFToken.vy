@@ -117,9 +117,7 @@ def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Byt
     
     self._transfer(_from, _to, _tokenId)
     if _to.is_contract:
-        # TODO need to check return:
-        # need to be equal to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
-        ERC721Receiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data)
+        assert ERC721Receiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data) == keccak256("onERC721Received(address,address,uint256,bytes)")
 
 
 @external
@@ -151,3 +149,4 @@ def setMintPrice(_newPrice: uint256):
 def mint():
     assert msg.value >= self.mintPrice
     self._addToken(msg.sender, self.supply)
+    log Transfer(ZERO_ADDRESS, msg.sender, self.supply-1)
