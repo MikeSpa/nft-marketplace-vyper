@@ -33,17 +33,30 @@ event Sale:
     _nft: address
     _tokenId: uint256
 
-    
-postingFee: public(uint256)
-sellingFee: public(uint256)
+struct Listing:
+    _seller: address
+    _nft: address
+    _tokenId: uint256
+    _price: uint256
+    _status: uint8 # 0-DONT EXIST, 1-OPEN, 2-SOLD, 3-CANCELED
+
+
+
+currentId: public(uint256)
+idToListing: public(HashMap[uint256, Listing])
+postingFee: public(uint256) # in wei
+sellingFee: public(uint256) # in %
 owner: public(address)
 marketplace: public(address)
 # nft -> tokenid -> price
-forSale: public(HashMap[address, HashMap[uint256, uint256]])
+# forSale: public(HashMap[address, HashMap[uint256, uint256]])
 @external
 def __init__():
     self.owner = msg.sender
     self.marketplace = self
+    self.currentId = 0
+    # self.postingFee = 0
+    # self.sellingFee = 0
 
 @external
 def setPostingFee(_newFee: uint256):
@@ -53,28 +66,61 @@ def setPostingFee(_newFee: uint256):
 def setSellingFee(_newFee: uint256):
     self.sellingFee = _newFee
 
+@internal
+def _addListing(_seller: address, _nft: address, _tokenId: uint256, _price: uint256):
+    listing: Listing = Listing({_seller: _seller, _nft: _nft, _tokenId: _tokenId, _price: _price, _status: 1})
+    id: uint256 = self.currentId
+    self.idToListing[id] = listing
+    self.currentId += 1
+
 @payable
 @external
 def sell(_nft: address, _tokenId: uint256, _price: uint256):
-    assert msg.value >= self.postingFee
+    assert msg.value >= self.postingFee, "Amount sent is below postingFee"
     # check that msg.sender is owner
-    assert msg.sender == NFToken(_nft).ownerOf(_tokenId)
+    assert msg.sender == NFToken(_nft).ownerOf(_tokenId), "Only the owner of the token can sell it"#TODO approved also
     NFToken(_nft).approve(self.marketplace, _tokenId)
-    self.forSale[_nft][_tokenId] = _price
+
+    self._addListing(msg.sender, _nft, _tokenId, _price)
     log Posting(msg.sender, _price, _nft, _tokenId)
 
 @payable
 @external
-def buy(_nft: address, _tokenId: uint256):
-    price: uint256 = self.forSale[_nft][_tokenId]
+def cancel_sell(_id: uint256):
+    assert msg.value >= self.postingFee, "Amount sent is below cancellingFee"
+    listing: Listing = self.idToListing[_id]
+    assert msg.sender == listing._seller, "Only the seller can cancel"
+    if listing._status == 2:
+        raise "Token already sold"
+    assert listing._status == 1, "Token not for sale (doesn't exist or already cancel"
+    listing._status = 3  # cancel listing
+    self.idToListing[_id] = listing #TODO test
+
+@payable
+@external
+def buy(_id: uint256):
+    listing: Listing = self.idToListing[_id]
+    price: uint256 = listing._price
     # token is for sale and money is send
-    assert price > 0 and msg.value >= price
+    assert price > 0 and msg.value >= price, "Not enough ether sent"
 
-    # seller: address # yep need that general ID
+    #Pay the seller
+    seller: address = listing._seller
+    fee: uint256 = price*self.sellingFee/100
+    send(seller, price - fee)
+    #Transfer the nft
+    nft: address = listing._nft
+    tokenId: uint256 = listing._tokenId
+    NFToken(nft).transferFrom(seller, msg.sender, tokenId)
 
-    #transfer nft
-    # NFToken(_nft).transferFrom(seller, msg.sender, _tokenId)
+    log Sale(seller, msg.sender, price, nft, listing._tokenId)
 
-    log Sale(self.marketplace, msg.sender, price, _nft, _tokenId)#TODO seller, probably need general itemID and mapping ID->seller
+#BID
+#Accept BID
 
-#Need structure for a posting with seller, nft, token, price and mapping GID -> struct
+@external
+def withdraw(_amount: uint256):
+    assert msg.sender == self.owner, "Only the owner can withdraw"
+    send(self.owner, _amount)
+
+#TODO handle if seller transfer nft
