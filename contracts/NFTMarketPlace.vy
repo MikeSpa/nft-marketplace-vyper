@@ -73,21 +73,24 @@ def _addListing(_seller: address, _nft: address, _tokenId: uint256, _price: uint
     self.idToListing[id] = listing
     self.currentId += 1
 
+
 @payable
 @external
 def sell(_nft: address, _tokenId: uint256, _price: uint256):
     assert msg.value >= self.postingFee, "Amount sent is below postingFee"
     # check that msg.sender is owner
     assert msg.sender == NFToken(_nft).ownerOf(_tokenId), "Only the owner of the token can sell it"#TODO approved also
-    NFToken(_nft).approve(self.marketplace, _tokenId)
+    
+    # Check that we are operator for the seller nft
+    assert NFToken(_nft).isApprovedForAll(msg.sender, self), "The marketplace doesn't have authorization to sell this token for this user"
 
     self._addListing(msg.sender, _nft, _tokenId, _price)
     log Posting(msg.sender, _price, _nft, _tokenId)
 
 @payable
 @external
-def cancel_sell(_id: uint256):
-    assert msg.value >= self.postingFee, "Amount sent is below cancellingFee"
+def cancelSell(_id: uint256):
+    # assert msg.value >= self.postingFee, "Amount sent is below cancellingFee"
     listing: Listing = self.idToListing[_id]
     assert msg.sender == listing._seller, "Only the seller can cancel"
     if listing._status == 2:
@@ -124,3 +127,6 @@ def withdraw(_amount: uint256):
     send(self.owner, _amount)
 
 #TODO handle if seller transfer nft
+
+
+
