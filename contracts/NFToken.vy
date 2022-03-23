@@ -36,6 +36,7 @@ totalSupply: public(uint256)
 ownerToCount: public(HashMap[address, uint256])
 idToOwner: public(HashMap[uint256, address])
 idToApproved: public(HashMap[uint256, address])
+ownerToApprovedForAll: public(HashMap[address, HashMap[address, bool]])
 
 mintPrice: public(uint256)
 
@@ -66,11 +67,11 @@ def ownerOf(_tokenId: uint256) -> address:
 def getApproved(_tokenId: uint256) -> address:
     return self.idToApproved[_tokenId]
 
-#TODO
+
 @view
 @external
 def isApprovedForAll(_owner: address, _operator: address) -> bool:
-    return False
+    return self.ownerToApprovedForAll[_owner][_operator]
 
 
 @internal
@@ -101,7 +102,9 @@ def _transfer(_from: address, _to: address, _tokenId: uint256):
 
 @external
 def transferFrom(_from: address, _to: address, _tokenId: uint256):
-    assert msg.sender == _from and self.idToOwner[_tokenId] == msg.sender
+    
+    #the sender must be the owner or approved
+    assert self.idToOwner[_tokenId] == msg.sender or self.idToApproved[_tokenId] == msg.sender or self.ownerToApprovedForAll[_from][msg.sender], "Caller not approved"
     
     self._transfer(_from, _to, _tokenId)
 
@@ -113,7 +116,9 @@ def transferFrom(_from: address, _to: address, _tokenId: uint256):
 
 @external
 def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]):
-    assert msg.sender == _from and self.idToOwner[_tokenId] == msg.sender
+    
+    #the sender must be the owner or approved
+    assert self.idToOwner[_tokenId] == msg.sender or self.idToApproved[_tokenId] == msg.sender or self.ownerToApprovedForAll[_from][msg.sender], "Caller not approved"
     
     self._transfer(_from, _to, _tokenId)
 
@@ -123,14 +128,15 @@ def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Byt
 
 @external
 def approve(_approved: address, _tokenId: uint256):
-    assert msg.sender == self.idToOwner[_tokenId]
+    assert msg.sender == self.idToOwner[_tokenId], "Only the owner can approve"
     self.idToApproved[_tokenId] = _approved
     log Approval(msg.sender, _approved, _tokenId)
 
-#TODO
+
 @external
 def setApprovalForAll(_operator: address, _approved: bool):
-    pass
+    self.ownerToApprovedForAll[msg.sender][_operator] = _approved
+    log ApprovalForAll(msg.sender, _operator, _approved)
 
 #TODO
 @view

@@ -192,3 +192,44 @@ def test_transferFrom_remove_approval(nftoken_contract):
     assert nftoken_contract.getApproved(0) == ZERO_ADDRESS
     # approved for token 1 didn't change
     assert nftoken_contract.getApproved(1) == acc1
+
+
+def test_setApprovedForAll(nftoken_contract):
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+    nftoken_contract.mint({"value": ONE})
+    nftoken_contract.mint({"value": ONE})
+
+    # approve acc1 for token 0 and 1
+    nftoken_contract.setApprovalForAll(acc1, True)
+
+    # acc1 now approved for all token
+    assert nftoken_contract.isApprovedForAll(account, acc1) == True
+    assert nftoken_contract.isApprovedForAll(account, acc2) == False
+
+    # account stil owner of token
+    assert nftoken_contract.ownerOf(0) == account
+
+    # Approved for all can transferFrom
+    nftoken_contract.transferFrom(account, acc2, 0, {"from": acc1})
+
+    # isApprovedForAll status unchanged
+    assert nftoken_contract.isApprovedForAll(account, acc1) == True
+    assert nftoken_contract.isApprovedForAll(account, acc2) == False
+
+    # remove authorization
+    tx = nftoken_contract.setApprovalForAll(acc1, False)
+
+    # isApprovedForAll status now False
+    assert nftoken_contract.isApprovedForAll(account, acc1) == False
+
+    # fails because you acc1 no longer operator
+    with brownie.reverts():
+        nftoken_contract.transferFrom(account, acc2, 1, {"from": acc1})
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_owner"] == account
+    assert tx.events[0]["_operator"] == acc1
+    assert tx.events[0]["_approved"] == False
