@@ -26,6 +26,10 @@ event Posting:
     _nft: address
     _tokenId: uint256
 
+event ListingUpdated:
+    _id: uint256
+    _listing: Listing
+
 event Sale:
     _seller: address
     _buyer: address
@@ -74,13 +78,20 @@ def _addListing(_seller: address, _nft: address, _tokenId: uint256, _price: uint
     self.currentId += 1
 
 
+@internal
+def _updateListing(_listingId: uint256, _listing: Listing):
+    # listing: Listing = _listing
+    self.idToListing[_listingId] = _listing
+    log ListingUpdated(_listingId, _listing)
+
+
 @payable
 @external
 def sell(_nft: address, _tokenId: uint256, _price: uint256):
     assert msg.value >= self.postingFee, "Amount sent is below postingFee"
     # check that msg.sender is owner
     assert msg.sender == NFToken(_nft).ownerOf(_tokenId), "Only the owner of the token can sell it"#TODO approved also
-    
+
     # Check that we are operator for the seller nft
     assert NFToken(_nft).isApprovedForAll(msg.sender, self), "The marketplace doesn't have authorization to sell this token for this user"
 
@@ -95,10 +106,16 @@ def cancelSell(_id: uint256):
     assert msg.sender == listing._seller, "Only the seller can cancel"
     if listing._status == 2:
         raise "Token already sold"
-    assert listing._status == 1, "Token not for sale (doesn't exist or already cancel"
+    assert listing._status == 1, "Token not for sale (already cancel or doesn't exist)"
     listing._status = 3  # cancel listing
     self.idToListing[_id] = listing #TODO test
+    log ListingUpdated(_id, listing)
 
+@payable
+@external
+def updateSell(_id: uint256):
+    pass
+    #change price
 @payable
 @external
 def buy(_id: uint256):
@@ -115,6 +132,11 @@ def buy(_id: uint256):
     nft: address = listing._nft
     tokenId: uint256 = listing._tokenId
     NFToken(nft).transferFrom(seller, msg.sender, tokenId)
+
+    #update Listing
+    newStatus: uint8 = 2
+    listing._status = newStatus
+    self._updateListing(_id, listing)
 
     log Sale(seller, msg.sender, price, nft, listing._tokenId)
 
