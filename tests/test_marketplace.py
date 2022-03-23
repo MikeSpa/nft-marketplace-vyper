@@ -4,7 +4,9 @@ import brownie
 
 NAME = "NFT1"
 SYMBOL = "1"
-MINT_PRICE = ONE
+MINT_PRICE = POINT_ONE
+
+# TODO assert balance everywhere
 
 
 @pytest.fixture
@@ -22,7 +24,7 @@ def NFT1(NFToken):
     nftoken = NFToken.deploy(NAME, SYMBOL, MINT_PRICE, {"from": account})
     for a in [account, acc1, acc2]:
         for i in range(10):
-            nftoken.mint({"value": ONE, "from": a})
+            nftoken.mint({"value": MINT_PRICE, "from": a})
     return nftoken
 
 
@@ -121,6 +123,52 @@ def test_cancelSell_revert(marketplace, NFT1):
         marketplace.cancelSell(1, {"from": account})
 
 
+def test_updateSell(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+    # Sell
+    NFT1.setApprovalForAll(marketplace, True)
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
+    marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": ONE})
+
+    tx = marketplace.updateSell(1, ONE * 2)
+
+    assert marketplace.idToListing(1)[3] == ONE * 2
+
+    # Test Event: Update Listing
+    assert len(tx.events) == 1
+    assert tx.events[0]["_id"] == 1
+    assert tx.events[0]["_listing"][3] == ONE * 2
+
+    # fails because value below price
+    with brownie.reverts("Not enough ether sent"):
+        marketplace.buy(1, {"from": acc1, "value": ONE})
+
+    marketplace.buy(1, {"from": acc1, "value": ONE * 2})
+
+
+def test_updateSell_revert(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+    # Sell
+    NFT1.setApprovalForAll(marketplace, True)
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
+    # marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": ONE})
+
+    # fails because same price
+    with brownie.reverts("The price need to be different"):
+        marketplace.updateSell(0, ONE)
+
+    # fails because not seller
+    with brownie.reverts("Only the seller can update"):
+        marketplace.updateSell(0, ONE * 2, {"from": acc1})
+
+    marketplace.buy(0, {"from": acc1, "value": ONE})
+    # fails because not for sale
+    with brownie.reverts("Token not for sale (already sold, cancel or doesn't exist)"):
+        marketplace.updateSell(0, ONE * 2)
+
+
 def test_buy(marketplace, NFT1):
     account = get_account()
     acc1 = get_account(index=1)
@@ -184,3 +232,14 @@ def test_buy_revert(marketplace, NFT1):
 
     # should be able to buy your own stuff ERC721::transferFrom allows
     marketplace.buy(2, {"from": account, "value": ONE})
+
+
+# should be possible, we still take the posting fee
+def test_price_of_zero(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+    NFT1.setApprovalForAll(marketplace, True)
+    marketplace.sell(NFT1.address, 0, 0, {"from": account})
+    marketplace.buy(0, {"from": acc1})
+
+    assert NFT1.ownerOf(0) == acc1

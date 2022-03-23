@@ -112,9 +112,14 @@ def cancelSell(_id: uint256):
 
 @payable
 @external
-def updateSell(_id: uint256):
-    pass
-    #change price
+def updateSell(_id: uint256, _newPrice: uint256):
+    listing: Listing = self.idToListing[_id]
+    assert listing._status == 1, "Token not for sale (already sold, cancel or doesn't exist)"
+    assert listing._seller == msg.sender, "Only the seller can update"
+    assert listing._price != _newPrice, "The price need to be different"
+
+    listing._price = _newPrice
+    self._updateListing(_id, listing)
 
 
 @payable
