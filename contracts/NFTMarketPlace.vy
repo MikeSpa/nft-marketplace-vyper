@@ -104,8 +104,7 @@ def cancelSell(_id: uint256):
     # assert msg.value >= self.postingFee, "Amount sent is below cancellingFee"
     listing: Listing = self.idToListing[_id]
     assert msg.sender == listing._seller, "Only the seller can cancel"
-    if listing._status == 2:
-        raise "Token already sold"
+    assert listing._status != 2, "Token already sold"
     assert listing._status == 1, "Token not for sale (already cancel or doesn't exist)"
     listing._status = 3  # cancel listing
     self.idToListing[_id] = listing #TODO test
@@ -116,13 +115,18 @@ def cancelSell(_id: uint256):
 def updateSell(_id: uint256):
     pass
     #change price
+
+
 @payable
 @external
 def buy(_id: uint256):
     listing: Listing = self.idToListing[_id]
+    assert listing._status != 0, "Listing doesn't exist"
+    assert listing._status == 1, "Token no longer for sale"
+
     price: uint256 = listing._price
-    # token is for sale and money is send
-    assert price > 0 and msg.value >= price, "Not enough ether sent"
+    # enough ether is sent
+    assert msg.value >= price, "Not enough ether sent"
 
     #Pay the seller
     seller: address = listing._seller

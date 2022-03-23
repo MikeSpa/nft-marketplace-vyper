@@ -103,11 +103,6 @@ def test_cancelSell_revert(marketplace, NFT1):
     acc2 = get_account(index=2)
     # Sell
     NFT1.setApprovalForAll(marketplace, True)
-    # print(account)
-    # print(acc1)
-    # print(acc2)
-    # for i in range(30):
-    #     print(f"{i}: {NFT1.ownerOf(i)}")
     marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
     marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": ONE})
 
@@ -141,18 +136,51 @@ def test_buy(marketplace, NFT1):
     assert NFT1.ownerOf(0) == acc1
 
     # Test Event
-    assert len(tx.events) == 2
+    assert len(tx.events) == 3
     ## Transfer of NFT
     assert tx.events[0]["_from"] == account
     assert tx.events[0]["_to"] == acc1
     assert tx.events[0]["_tokenId"] == 0
 
+    ## Update Listing
+    assert tx.events[1]["_id"] == 0
+    assert tx.events[1]["_listing"][4] == 2
+
     ## Sale
-    assert tx.events[1]["_seller"] == account
-    assert tx.events[1]["_buyer"] == acc1
-    assert tx.events[1]["_price"] == ONE
-    assert tx.events[1]["_nft"] == NFT1
-    assert tx.events[1]["_tokenId"] == 0
+    assert tx.events[2]["_seller"] == account
+    assert tx.events[2]["_buyer"] == acc1
+    assert tx.events[2]["_price"] == ONE
+    assert tx.events[2]["_nft"] == NFT1
+    assert tx.events[2]["_tokenId"] == 0
 
 
-##test buy revert if value too small, buying own stuff, already bought
+def test_buy_revert(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+    # Sell
+    NFT1.setApprovalForAll(marketplace, True)
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account})
+    marketplace.sell(NFT1.address, 1, ONE, {"from": account})
+    marketplace.sell(NFT1.address, 2, ONE, {"from": account})
+
+    # fails because value below price
+    with brownie.reverts("Not enough ether sent"):
+        marketplace.buy(0, {"from": acc1, "value": POINT_ONE})
+
+    marketplace.buy(0, {"from": acc2, "value": ONE})
+    # fails because token already bought
+    with brownie.reverts("Token no longer for sale"):
+        marketplace.buy(0, {"from": acc1, "value": ONE})
+
+    marketplace.cancelSell(1, {"from": account})
+    # fails because canceled
+    with brownie.reverts("Token no longer for sale"):
+        marketplace.buy(1, {"from": acc1, "value": ONE})
+
+    # fails because listing doesn't exist
+    with brownie.reverts("Listing doesn't exist"):
+        marketplace.buy(3, {"from": acc1, "value": ONE})
+
+    # should be able to buy your own stuff ERC721::transferFrom allows
+    marketplace.buy(2, {"from": account, "value": ONE})
