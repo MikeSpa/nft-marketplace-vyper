@@ -36,7 +36,7 @@ def __init__(_owner: address):
 
 @external
 def setOwner(_newOwner: address):
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "Only the owner can set a new owner"
     self.owner = _newOwner
 
 
@@ -62,3 +62,19 @@ def approve(_spender: address, _value: uint256) -> bool:
     self.allowance[msg.sender][_spender] = _value
     log Approval(msg.sender, _spender, _value)
     return True
+
+
+@external
+def mint(_to: address, _amount: uint256):
+
+    assert msg.sender == self.owner, "Only owner can mint token"
+    assert _to != ZERO_ADDRESS, "Can't mint to ZERO_ADDRESS"
+    self.balanceOf[_to] += _amount
+    self.totalSupply += _amount
+    log Transfer(ZERO_ADDRESS, _to, _amount)
+
+@external
+def burn(_amount: uint256):
+    self.balanceOf[msg.sender] -= _amount
+    self.totalSupply -= _amount
+    log Transfer(msg.sender, ZERO_ADDRESS, _amount)
