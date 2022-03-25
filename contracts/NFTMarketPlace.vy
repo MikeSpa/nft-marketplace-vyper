@@ -1,7 +1,6 @@
 #NFT MarketPlace
 # @version 0.3.1
 
-
 interface NFToken:
     def onERC721Received(
             _operator: address,
@@ -37,6 +36,15 @@ event Sale:
     _nft: address
     _tokenId: uint256
 
+event BidEvent:
+    _listing: uint256
+    _bidder: address
+    _bid: uint256
+
+struct Bid:
+    _bidder: address
+    _bid: uint256
+    
 struct Listing:
     _seller: address
     _nft: address
@@ -45,15 +53,15 @@ struct Listing:
     _status: uint8 # 0-DONT EXIST, 1-OPEN, 2-SOLD, 3-CANCELED
 
 
-
 currentId: public(uint256)
 idToListing: public(HashMap[uint256, Listing])
+idToBid: public(HashMap[uint256, Bid])
 postingFee: public(uint256) # in wei
 sellingFee: public(uint256) # in %
 owner: public(address)
 marketplace: public(address)
-# nft -> tokenid -> price
-# forSale: public(HashMap[address, HashMap[uint256, uint256]])
+
+
 @external
 def __init__():
     self.owner = msg.sender
@@ -148,6 +156,33 @@ def buy(_id: uint256):
     self._updateListing(_id, listing)
 
     log Sale(seller, msg.sender, price, nft, listing._tokenId)
+
+
+#TODO remember old bid so if highest gets cancel, previous become live again
+# need idToBid: public(HashMap[uint256, HashMpa[uint, Bid]]) listingId -> bid# -> actual bid
+# also need golbal mapping listingid -> current bid#
+# maybe try to play with Dynamic Arrays for once
+@payable
+@external
+def bid(_id: uint256, _bid: uint256):
+    listing: Listing = self.idToListing[_id]
+
+    assert listing._status == 1, "Token not for sale"
+
+    previous_bid: Bid = self.idToBid[_id]
+
+    assert previous_bid._bid < _bid, "Bid too low"
+
+    new_bid: Bid = Bid({_bidder: msg.sender, _bid:_bid})
+    self.idToBid[_id] = new_bid
+
+    log BidEvent(_id, msg.sender, _bid)
+
+    
+@payable
+@external
+def cancelBid(_id: uint256):
+    pass
 
 #BID
 #Accept BID
