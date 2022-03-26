@@ -224,7 +224,7 @@ def test_setApprovedForAll(nftoken_contract):
     # isApprovedForAll status now False
     assert nftoken_contract.isApprovedForAll(account, acc1) == False
 
-    # fails because you acc1 no longer operator
+    # fails because acc1 no longer operator
     with brownie.reverts():
         nftoken_contract.transferFrom(account, acc2, 1, {"from": acc1})
 
