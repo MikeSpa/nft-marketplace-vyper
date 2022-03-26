@@ -1,5 +1,5 @@
 import pytest
-from scripts.helpful_scripts import get_account, ONE, ZERO_ADDRESS, POINT_ONE
+from scripts.helpful_scripts import get_account, ONE, ZERO_ADDRESS, POINT_ONE, CENT
 import brownie
 
 NAME = "NFT1"
@@ -43,6 +43,8 @@ def test_set_fee(marketplace):
     assert marketplace.postingFee() == POINT_ONE
     assert marketplace.sellingFee() == 5
 
+    assert owner.balance() == CENT
+
 
 def test_set_fee_revert(marketplace):
     acc1 = get_account(index=1)
@@ -62,8 +64,10 @@ def test_set_fee_revert(marketplace):
 
 def test_sell(marketplace, NFT1):
     account = get_account()
+    init_balance_account = account.balance()
     # first tx approve the marketplace as operator
     tx = NFT1.setApprovalForAll(marketplace, True)
+    assert account.balance() == init_balance_account
 
     # Test Event
     assert len(tx.events) == 1
@@ -72,12 +76,12 @@ def test_sell(marketplace, NFT1):
     assert tx.events[0]["_approved"] == True
 
     # second tx list the token
-    tx = marketplace.sell(
-        NFT1.address, 0, ONE * 42, {"from": account, "value": ONE / 10}
-    )
+    tx = marketplace.sell(NFT1.address, 0, ONE * 42, {"from": account})
 
     # account remains the owner of the token
     assert NFT1.ownerOf(0) == account
+
+    assert account.balance() == init_balance_account - marketplace.postingFee()
 
     # Test Event
     assert len(tx.events) == 1
@@ -92,22 +96,21 @@ def test_sell_revert(marketplace, NFT1):
 
     # fails because account don't own the token #10
     with brownie.reverts("Only the owner of the token can sell it"):
-        tx = marketplace.sell(NFT1.address, 10, ONE * 42, {"from": account})
+        marketplace.sell(NFT1.address, 10, ONE * 42, {"from": account})
 
     # fails because marketplace not operator
     with brownie.reverts(
         "The marketplace doesn't have authorization to sell this token for this user"
     ):
-        tx = marketplace.sell(NFT1.address, 0, ONE * 42, {"from": account})
+        marketplace.sell(NFT1.address, 0, ONE * 42, {"from": account})
 
 
 def test_cancelSell(marketplace, NFT1):
     account = get_account()
-    acc1 = get_account(index=1)
-    acc2 = get_account(index=2)
+
     # Sell
     NFT1.setApprovalForAll(marketplace, True)
-    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": 0})
     assert NFT1.ownerOf(0) == account
 
     # Cancel
@@ -122,8 +125,8 @@ def test_cancelSell_revert(marketplace, NFT1):
     acc2 = get_account(index=2)
     # Sell
     NFT1.setApprovalForAll(marketplace, True)
-    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
-    marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": ONE})
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": 0})
 
     # fails because only seller can cancel
     with brownie.reverts("Only the seller can cancel"):
@@ -145,8 +148,8 @@ def test_updateSell(marketplace, NFT1):
     acc1 = get_account(index=1)
     # Sell
     NFT1.setApprovalForAll(marketplace, True)
-    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
-    marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": ONE})
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": 0})
 
     tx = marketplace.updateSell(1, ONE * 2, {"from": account})
 
@@ -189,15 +192,24 @@ def test_updateSell_revert(marketplace, NFT1):
 def test_buy(marketplace, NFT1):
     account = get_account()
     acc1 = get_account(index=1)
-    acc2 = get_account(index=2)
+
+    init_balance_account = account.balance()
+    init_balance_acc1 = acc1.balance()
+
     # Sell
     NFT1.setApprovalForAll(marketplace, True)
-    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": 0})
+    priceNFT = marketplace.idToListing(0)[3]
+    # Ownership
     assert NFT1.ownerOf(0) == account
+
     # Buy
+    tx = marketplace.buy(0, {"from": acc1, "value": priceNFT})
 
-    tx = marketplace.buy(0, {"from": acc1, "value": ONE})
-
+    # Money
+    assert account.balance() == init_balance_account + priceNFT
+    assert acc1.balance() == init_balance_acc1 - priceNFT
+    # Ownership
     assert NFT1.ownerOf(0) == acc1
 
     # Test Event
