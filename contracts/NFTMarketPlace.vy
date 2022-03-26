@@ -55,7 +55,8 @@ struct Listing:
 
 currentId: public(uint256)
 idToListing: public(HashMap[uint256, Listing])
-idToBid: public(HashMap[uint256, Bid])
+idToBid: public(HashMap[uint256, HashMap[uint256, Bid]])  # listing Id -> bid # -> Bid
+listingToBidNumber: public(HashMap[uint256, uint256])  # listing Id -> highest current Bid Id in self.idToBid
 postingFee: public(uint256) # in wei
 sellingFee: public(uint256) # in %
 owner: public(address)
@@ -72,10 +73,12 @@ def __init__():
 
 @external
 def setPostingFee(_newFee: uint256):
+    assert msg.sender == self.owner, "Only the owner can do that"
     self.postingFee = _newFee
 
 @external
 def setSellingFee(_newFee: uint256):
+    assert msg.sender == self.owner, "Only the owner can do that"
     self.sellingFee = _newFee
 
 @internal
@@ -158,31 +161,62 @@ def buy(_id: uint256):
     log Sale(seller, msg.sender, price, nft, listing._tokenId)
 
 
-#TODO remember old bid so if highest gets cancel, previous become live again
-# need idToBid: public(HashMap[uint256, HashMpa[uint, Bid]]) listingId -> bid# -> actual bid
-# also need golbal mapping listingid -> current bid#
-# maybe try to play with Dynamic Arrays for once
+# maybe try to play with Dynamic Arrays for once-> need to wait for 0.3.2
+# fucking ugly
 @payable
 @external
 def bid(_id: uint256, _bid: uint256):
     listing: Listing = self.idToListing[_id]
 
+    #assert ether.allowance > _bid, need to check for all listing: mapping address -> totalBidValue
+
     assert listing._status == 1, "Token not for sale"
+    assert _bid > 0, "Bid can't be 0"
 
-    previous_bid: Bid = self.idToBid[_id]
+    highestBidId: uint256 = self.listingToBidNumber[_id]
+    if highestBidId == 0:  # first bid
+        new_bid: Bid = Bid({_bidder: msg.sender, _bid:_bid})
+        self.idToBid[_id][1] = new_bid
+        self.listingToBidNumber[_id] = 1 # start at one
 
-    assert previous_bid._bid < _bid, "Bid too low"
+    else:
+        previous_bid: Bid = self.idToBid[_id][highestBidId]
 
-    new_bid: Bid = Bid({_bidder: msg.sender, _bid:_bid})
-    self.idToBid[_id] = new_bid
+        assert previous_bid._bid < _bid, "Bid too low"
+
+        new_bid: Bid = Bid({_bidder: msg.sender, _bid:_bid})
+        self.idToBid[_id][highestBidId + 1] = new_bid
+        self.listingToBidNumber[_id] = highestBidId + 1
 
     log BidEvent(_id, msg.sender, _bid)
 
     
-@payable
-@external
-def cancelBid(_id: uint256):
-    pass
+# @payable
+# @external
+# def cancelBid(_listingId: uint256, _bidId: uint256):
+#     bid: Bid = self.idToBid[_listingId][_bidId]
+#     assert bid._bidder == msg.sender
+
+#     bid._bid = 0
+
+#     self.idToBid[_listingId][_bidId] = bid
+
+#     # bidId: uint256 = 
+
+#     for bidId in range(_bidId, 0, -1):
+#         if (self.listingToBidNumber[_listingId] == _bidId): # was highest bid
+#             self.listingToBidNumber[_listingId] = bidId -1
+#         if (self.idToBid[_listingId][self.listingToBidNumber[_listingId]]._bid) > 0:
+#             break
+
+#     #TODO
+
+# g
+
+# @payable
+# @external
+# def acceptBid(_id: uint256, _bidId: uint256):
+#     pass
 
 #BID
 #Accept BID

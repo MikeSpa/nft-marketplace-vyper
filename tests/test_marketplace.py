@@ -11,8 +11,8 @@ MINT_PRICE = POINT_ONE
 
 @pytest.fixture
 def marketplace(NFTMarketPlace):
-    account = get_account()
-    yield NFTMarketPlace.deploy({"from": account})
+    owner = get_account(index=8)
+    yield NFTMarketPlace.deploy({"from": owner})
 
 
 # Deploy an NFToken "1" and mint 30 token, 10 for each account
@@ -33,14 +33,31 @@ def test_initial_totalSupply(NFT1):
 
 
 def test_set_fee(marketplace):
+    owner = get_account(index=8)
     assert marketplace.postingFee() == 0
     assert marketplace.sellingFee() == 0
 
-    marketplace.setPostingFee(POINT_ONE)
-    marketplace.setSellingFee(5)
+    marketplace.setPostingFee(POINT_ONE, {"from": owner})
+    marketplace.setSellingFee(5, {"from": owner})
 
     assert marketplace.postingFee() == POINT_ONE
     assert marketplace.sellingFee() == 5
+
+
+def test_set_fee_revert(marketplace):
+    acc1 = get_account(index=1)
+    assert marketplace.postingFee() == 0
+    assert marketplace.sellingFee() == 0
+
+    # fails because marketplace not operator
+    with brownie.reverts("Only the owner can do that"):
+        marketplace.setPostingFee(POINT_ONE, {"from": acc1})
+    # fails because marketplace not operator
+    with brownie.reverts("Only the owner can do that"):
+        marketplace.setSellingFee(5, {"from": acc1})
+
+    assert marketplace.postingFee() == 0
+    assert marketplace.sellingFee() == 0
 
 
 def test_sell(marketplace, NFT1):
@@ -94,7 +111,7 @@ def test_cancelSell(marketplace, NFT1):
     assert NFT1.ownerOf(0) == account
 
     # Cancel
-    marketplace.cancelSell(0)
+    marketplace.cancelSell(0, {"from": account})
 
     assert marketplace.idToListing(0)[4] == 3
 
@@ -131,7 +148,7 @@ def test_updateSell(marketplace, NFT1):
     marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": ONE})
     marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": ONE})
 
-    tx = marketplace.updateSell(1, ONE * 2)
+    tx = marketplace.updateSell(1, ONE * 2, {"from": account})
 
     assert marketplace.idToListing(1)[3] == ONE * 2
 
@@ -157,7 +174,7 @@ def test_updateSell_revert(marketplace, NFT1):
 
     # fails because same price
     with brownie.reverts("The price need to be different"):
-        marketplace.updateSell(0, ONE)
+        marketplace.updateSell(0, ONE, {"from": account})
 
     # fails because not seller
     with brownie.reverts("Only the seller can update"):
@@ -166,7 +183,7 @@ def test_updateSell_revert(marketplace, NFT1):
     marketplace.buy(0, {"from": acc1, "value": ONE})
     # fails because not for sale
     with brownie.reverts("Token not for sale (already sold, cancel or doesn't exist)"):
-        marketplace.updateSell(0, ONE * 2)
+        marketplace.updateSell(0, ONE * 2, {"from": account})
 
 
 def test_buy(marketplace, NFT1):
