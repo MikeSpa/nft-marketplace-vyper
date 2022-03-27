@@ -272,3 +272,88 @@ def test_price_of_zero(marketplace, NFT1):
     marketplace.buy(0, {"from": acc1})
 
     assert NFT1.ownerOf(0) == acc1
+
+
+def test_withdraw(marketplace, NFT1):
+    owner = get_account(index=8)
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+    acc3 = get_account(index=3)
+    acc4 = get_account(index=4)
+
+    init_balance_owner = owner.balance()
+    init_balance_account = account.balance()
+    init_balance_acc1 = acc1.balance()
+    init_balance_acc2 = acc2.balance()
+    init_balance_acc3 = acc3.balance()
+    init_balance_acc4 = acc4.balance()
+
+    init_total_balance = (
+        init_balance_owner
+        + init_balance_account
+        + init_balance_acc1
+        + init_balance_acc2
+        + init_balance_acc3
+        + init_balance_acc4
+        + marketplace.balance()
+    )
+
+    # Sell
+    marketplace.setSellingFee(1, {"from": owner})
+    assert marketplace.sellingFee() == 1
+
+    NFT1.setApprovalForAll(marketplace, True, {"from": account})
+    NFT1.setApprovalForAll(marketplace, True, {"from": acc1})
+    NFT1.setApprovalForAll(marketplace, True, {"from": acc2})
+
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 2, ONE, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 3, ONE, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 4, ONE, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 10, ONE, {"from": acc1, "value": 0})
+    marketplace.sell(NFT1.address, 11, ONE, {"from": acc1, "value": 0})
+    marketplace.sell(NFT1.address, 20, ONE, {"from": acc2, "value": 0})
+    priceNFT = ONE
+    # How much a seeler receive after the selling tax
+    seller_get = priceNFT - priceNFT * 1 / 100
+
+    # Buy
+    marketplace.buy(0, {"from": acc1, "value": priceNFT})
+    marketplace.buy(1, {"from": acc4, "value": priceNFT})
+    marketplace.buy(2, {"from": acc4, "value": priceNFT})
+    marketplace.buy(3, {"from": acc3, "value": priceNFT})
+    marketplace.buy(4, {"from": acc3, "value": priceNFT})
+    marketplace.buy(5, {"from": acc4, "value": priceNFT})
+    marketplace.buy(6, {"from": acc1, "value": priceNFT})
+    marketplace.buy(7, {"from": account, "value": priceNFT})
+
+    # 8 Buy at price of ONE and 1% of fee
+    total_fee = 8 * ONE * 1 / 100
+
+    assert marketplace.balance() == total_fee
+
+    # Withdraw
+    marketplace.withdraw(total_fee, {"from": owner})
+
+    # Money
+    assert account.balance() == init_balance_account + 5 * seller_get - priceNFT
+    assert acc1.balance() == init_balance_acc1 + 2 * seller_get - 2 * priceNFT
+    assert acc2.balance() == init_balance_acc2 + seller_get
+    assert acc3.balance() == init_balance_acc3 - 2 * priceNFT
+    assert acc4.balance() == init_balance_acc4 - 3 * priceNFT
+
+    assert owner.balance() == init_balance_owner + total_fee
+    assert marketplace.balance() == 0
+
+    assert (
+        init_total_balance
+        == owner.balance()
+        + account.balance()
+        + acc1.balance()
+        + acc2.balance()
+        + acc3.balance()
+        + acc4.balance()
+        + marketplace.balance()
+    )
