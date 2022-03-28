@@ -9,3 +9,4 @@ Allow users to sell and buy any ERC721 compatible NFT.
 - [ ]: add Bid functionality + test
 - [x]: test MarketCoin
 - [ ]: add MarketCoin in MarketPlace
+- [ ]: add autho for approved address
