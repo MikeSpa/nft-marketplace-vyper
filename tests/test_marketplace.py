@@ -93,6 +93,7 @@ def test_sell(marketplace, NFT1):
 
 def test_sell_revert(marketplace, NFT1):
     account = get_account()
+    owner = get_account(index=8)
 
     # fails because account don't own the token #10
     with brownie.reverts("Only the owner of the token can sell it"):
@@ -103,6 +104,11 @@ def test_sell_revert(marketplace, NFT1):
         "The marketplace doesn't have authorization to sell this token for this user"
     ):
         marketplace.sell(NFT1.address, 0, ONE * 42, {"from": account})
+
+    marketplace.setPostingFee(POINT_ONE, {"from": owner})
+    # fails because amount sent is below posting fee
+    with brownie.reverts("Amount sent is below postingFee"):
+        marketplace.sell(NFT1, 0, ONE, {"from": account})
 
 
 def test_cancelSell(marketplace, NFT1):
@@ -357,3 +363,6 @@ def test_withdraw(marketplace, NFT1):
         + acc4.balance()
         + marketplace.balance()
     )
+
+    with brownie.reverts("Only the owner can withdraw"):
+        marketplace.withdraw(0, {"from": account})
