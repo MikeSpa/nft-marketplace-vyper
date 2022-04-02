@@ -71,8 +71,9 @@ listingToBidNumber: public(HashMap[uint256, uint256])  # listing Id -> highest c
 postingFee: public(uint256) # in wei
 sellingFee: public(uint256) # in %
 owner: public(address)
-marketplace: public(address)
-marketCoin: public(address)
+marketplace: public(address)  # self
+marketCoin: public(address)  # Address of MarketCoin
+marketNFT: public(address)  # Address of MarketNFT
 
 
 @external
