@@ -78,7 +78,6 @@ def isApprovedForAll(_owner: address, _operator: address) -> bool:
 def _addToken(_to: address, _tokenId: uint256):
     assert _to != ZERO_ADDRESS, "Can't transfer to null address"
     self.idToOwner[_tokenId] = _to
-    self.idToApproved[_tokenId] = ZERO_ADDRESS
     self.ownerToCount[_to] += 1
     self.totalSupply += 1
 
@@ -87,6 +86,7 @@ def _addToken(_to: address, _tokenId: uint256):
 def _removeToken(_from: address, _tokenId: uint256):
     assert _from == self.idToOwner[_tokenId], "Not owner of the token"
     self.idToOwner[_tokenId] = ZERO_ADDRESS
+    self.idToApproved[_tokenId] = ZERO_ADDRESS
     self.ownerToCount[_from] -= 1
     self.totalSupply -= 1
 
@@ -100,11 +100,22 @@ def _transfer(_from: address, _to: address, _tokenId: uint256):
     log Transfer(_from, _to, _tokenId)
 
 
+@internal
+def _isOwnerOrApproved(_address: address, _tokenId: uint256) -> bool:
+
+    owner: address = self.idToOwner[_tokenId]
+    approved: address = self.idToApproved[_tokenId]
+    isApprovedForAll: bool = self.ownerToApprovedForAll[owner][_address]
+
+    return (_address == owner or _address == approved or isApprovedForAll) 
+
+
+
 @external
 def transferFrom(_from: address, _to: address, _tokenId: uint256):
     
     #the sender must be the owner or approved
-    assert self.idToOwner[_tokenId] == msg.sender or self.idToApproved[_tokenId] == msg.sender or self.ownerToApprovedForAll[_from][msg.sender], "Caller not approved"
+    assert self._isOwnerOrApproved(msg.sender, _tokenId), "Caller not approved"
     
     self._transfer(_from, _to, _tokenId)
 
@@ -118,8 +129,8 @@ def transferFrom(_from: address, _to: address, _tokenId: uint256):
 def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]):
     
     #the sender must be the owner or approved
-    assert self.idToOwner[_tokenId] == msg.sender or self.idToApproved[_tokenId] == msg.sender or self.ownerToApprovedForAll[_from][msg.sender], "Caller not approved"
-    
+    assert self._isOwnerOrApproved(msg.sender, _tokenId), "Caller not approved"
+
     self._transfer(_from, _to, _tokenId)
 
     if _to.is_contract:
