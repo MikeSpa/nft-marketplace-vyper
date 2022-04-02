@@ -119,14 +119,9 @@ def transferFrom(_from: address, _to: address, _tokenId: uint256):
     
     self._transfer(_from, _to, _tokenId)
 
-#TODO
-# implements: ERC721 throws an error if both fct are present?
-# @external
-# def safeTransferFrom(_from: address, _to: address, _tokenId: uint256):
-
 
 @external
-def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]):
+def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]=b''):
     
     #the sender must be the owner or approved
     assert self._isOwnerOrApproved(msg.sender, _tokenId), "Caller not approved"
