@@ -27,7 +27,7 @@ interface MarketCoin:
     def transfer(_to: address, _value: uint256) -> bool: nonpayable
     def transferFrom(_from: address, _to: address, _value: uint256) -> bool: nonpayable
     def approve(_spender: address, _value: uint256) -> bool: nonpayable
-    def mint(_to: address, _amount: uint256) -> bool: nonpayable
+    def mint(_to: address, _amount: uint256): nonpayable
     def burn(_amount: uint256) -> bool: nonpayable
 
 event Posting:
