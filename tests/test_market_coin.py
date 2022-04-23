@@ -47,7 +47,7 @@ def test_setOwner_revert(marketCoin):
     owner = get_account(index=8)
     acc1 = get_account(index=1)
 
-    with brownie.reverts("Only the owner can set a new owner"):
+    with brownie.reverts("MarketCoin: Only the owner can set a new owner"):
         marketCoin.setOwner(acc1, {"from": acc1})
 
     assert marketCoin.owner() == owner
@@ -79,10 +79,10 @@ def test_mint_revert(marketCoin):
     owner = get_account(index=8)
     acc1 = get_account(index=1)
 
-    with brownie.reverts("Only owner can mint token"):
+    with brownie.reverts("MarketCoin: Only owner can mint token"):
         marketCoin.mint(ZERO_ADDRESS, CENT, {"from": acc1})
 
-    with brownie.reverts("Can't mint to ZERO_ADDRESS"):
+    with brownie.reverts("MarketCoin: Can't mint to ZERO_ADDRESS"):
         marketCoin.mint(ZERO_ADDRESS, CENT, {"from": owner})
 
     assert marketCoin.totalSupply() == 0
@@ -171,7 +171,7 @@ def test_transfer_revert(marketCoin, _value=ONE):
         marketCoin.transfer(acc2, _value * 2, {"from": acc1})
 
     # fails because _to == ZERO
-    with brownie.reverts("Can't transfer to ZERO_ADDRESS"):
+    with brownie.reverts("MarketCoin: Can't transfer to ZERO_ADDRESS"):
         marketCoin.transfer(ZERO_ADDRESS, _value, {"from": acc1})
 
 
