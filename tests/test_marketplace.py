@@ -1,6 +1,13 @@
 import pytest
-from scripts.helpful_scripts import get_account, ONE, ZERO_ADDRESS, POINT_ONE, CENT
+from scripts.helpful_scripts import (
+    get_account,
+    ONE,
+    ZERO_ADDRESS,
+    POINT_ONE,
+    CENT,
+)
 import brownie
+from brownie import Contract, MarketCoin
 
 NAME = "NFT1"
 SYMBOL = "1"
@@ -10,9 +17,14 @@ MINT_PRICE = POINT_ONE
 
 
 @pytest.fixture
-def marketplace(NFTMarketPlace):
+def marketplace(NFTMarketPlace, MarketCoin):
     owner = get_account(index=8)
-    yield NFTMarketPlace.deploy({"from": owner})
+    marketcoin = MarketCoin.deploy(owner, {"from": owner})
+
+    marketplace = NFTMarketPlace.deploy({"from": owner})
+    marketplace.setMarketCoin(marketcoin, {"from": owner})
+    marketcoin.setOwner(marketplace, {"from": owner})
+    return marketplace
 
 
 # Deploy an NFToken "1" and mint 30 token, 10 for each account
@@ -219,22 +231,32 @@ def test_buy(marketplace, NFT1):
     assert NFT1.ownerOf(0) == acc1
 
     # Test Event
-    assert len(tx.events) == 3
+    assert len(tx.events) == 5
     ## Transfer of NFT
     assert tx.events[0]["_from"] == account
     assert tx.events[0]["_to"] == acc1
     assert tx.events[0]["_tokenId"] == 0
 
+    ## Test Transfer Event - Mint MarketCoin to seller
+    assert tx.events[1]["_from"] == ZERO_ADDRESS
+    assert tx.events[1]["_to"] == account
+    assert tx.events[1]["_value"] == ONE / 10
+
+    ## Test Transfer Event - Mint MarketCoin to buyer
+    assert tx.events[2]["_from"] == ZERO_ADDRESS
+    assert tx.events[2]["_to"] == acc1
+    assert tx.events[2]["_value"] == ONE / 10
+
     ## Update Listing
-    assert tx.events[1]["_id"] == 0
-    assert tx.events[1]["_listing"][4] == 2
+    assert tx.events[3]["_id"] == 0
+    assert tx.events[3]["_listing"][4] == 2
 
     ## Sale
-    assert tx.events[2]["_seller"] == account
-    assert tx.events[2]["_buyer"] == acc1
-    assert tx.events[2]["_price"] == ONE
-    assert tx.events[2]["_nft"] == NFT1
-    assert tx.events[2]["_tokenId"] == 0
+    assert tx.events[4]["_seller"] == account
+    assert tx.events[4]["_buyer"] == acc1
+    assert tx.events[4]["_price"] == ONE
+    assert tx.events[4]["_nft"] == NFT1
+    assert tx.events[4]["_tokenId"] == 0
 
 
 def test_buy_revert(marketplace, NFT1):
@@ -366,3 +388,34 @@ def test_withdraw(marketplace, NFT1):
 
     with brownie.reverts("Only the owner can withdraw"):
         marketplace.withdraw(0, {"from": account})
+
+
+def test_marketcoin_balance(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+
+    marketCoin_address = marketplace.marketCoin()
+    marketCoin = Contract.from_abi(MarketCoin._name, marketCoin_address, MarketCoin.abi)
+    init_balance_account = marketCoin.balanceOf(account)
+    init_balance_acc1 = marketCoin.balanceOf(acc1)
+    init_balance_acc2 = marketCoin.balanceOf(acc2)
+
+    # Sell
+    NFT1.setApprovalForAll(marketplace, True)
+    priceNFT = ONE
+    marketplace.sell(NFT1.address, 0, priceNFT, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 1, priceNFT, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 2, priceNFT, {"from": account, "value": 0})
+    marketplace.sell(NFT1.address, 3, priceNFT, {"from": account, "value": 0})
+
+    # Buy
+    tx = marketplace.buy(0, {"from": acc1, "value": priceNFT})
+    marketplace.buy(1, {"from": acc1, "value": priceNFT})
+    marketplace.buy(2, {"from": acc2, "value": priceNFT})
+    marketplace.buy(3, {"from": account, "value": priceNFT})
+
+    # Money
+    assert marketCoin.balanceOf(account) == init_balance_account + 5 * priceNFT / 10
+    assert marketCoin.balanceOf(acc1) == init_balance_acc1 + 2 * priceNFT / 10
+    assert marketCoin.balanceOf(acc2) == init_balance_acc2 + priceNFT / 10
