@@ -10,13 +10,13 @@ Main contract
 Generic ERC-20 token
 
 ## NFToken
-Generic ERC-71 token
+Generic ERC-721 token
 
 ## MarketCoin
 ERC-20 token for the marketplace. User buying and selling NFT on the marketplace are rewarded with MarketCoin token.
 
 ## MarketNFT
-Custom ERC-71 token for the marketplace, user can buy it on the marketplace with Marketcoin instead of ETH. Can also be buy/sell like a regular ERC.71 token.
+Custom ERC-721 token for the marketplace, user can buy it on the marketplace with Marketcoin instead of ETH. Can also be buy/sell like a regular ERC-721 token.
 
 
 ## TODO
