@@ -39,7 +39,7 @@ def __init__(_owner: address):
 # @param _newOwner The new owner
 @external
 def setOwner(_newOwner: address):
-    assert msg.sender == self.owner, "Only the owner can set a new owner"
+    assert msg.sender == self.owner, "MarketCoin: Only the owner can set a new owner"
     self.owner = _newOwner
 
 
@@ -50,7 +50,7 @@ def setOwner(_newOwner: address):
 # @return True if transaction successful.
 @external
 def transfer(_to: address, _value: uint256) -> bool:
-    assert _to != ZERO_ADDRESS, "Can't transfer to ZERO_ADDRESS"
+    assert _to != ZERO_ADDRESS, "MarketCoin: Can't transfer to ZERO_ADDRESS"
     self.balanceOf[msg.sender] -= _value
     self.balanceOf[_to] += _value
     log Transfer(msg.sender, _to, _value)
@@ -93,10 +93,13 @@ def approve(_spender: address, _value: uint256) -> bool:
 @external
 def mint(_to: address, _amount: uint256):
 
-    assert msg.sender == self.owner, "Only owner can mint token"
-    assert _to != ZERO_ADDRESS, "Can't mint to ZERO_ADDRESS"
+    assert msg.sender == self.owner, "MarketCoin: Only owner can mint token"
+    assert _to != ZERO_ADDRESS, "MarketCoin: Can't mint to ZERO_ADDRESS"
+    
     self.balanceOf[_to] += _amount
+    
     self.totalSupply += _amount
+    
     log Transfer(ZERO_ADDRESS, _to, _amount)
 
 
