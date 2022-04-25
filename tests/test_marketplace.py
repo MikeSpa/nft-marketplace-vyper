@@ -74,6 +74,16 @@ def test_set_fee_revert(marketplace):
     assert marketplace.sellingFee() == 0
 
 
+def test_set_marketcoin(marketplace):
+    account = get_account()
+    owner = get_account(index=8)
+
+    marketcoin = MarketCoin.deploy(account, {"from": account})
+    with brownie.reverts("Only the owner can do that"):
+        marketplace.setMarketCoin(marketcoin, {"from": account})
+    marketplace.setMarketCoin(marketcoin, {"from": owner})
+
+
 def test_sell(marketplace, NFT1):
     account = get_account()
     init_balance_account = account.balance()

@@ -223,3 +223,13 @@ def test_setApprovedForAll(marketNFT):
     assert tx.events[0]["_owner"] == account
     assert tx.events[0]["_operator"] == acc1
     assert tx.events[0]["_approved"] == False
+
+
+def test_transfer_revert_if_token_doesnt_exist(marketNFT):
+    account = get_account()
+    acc1 = get_account(index=1)
+    marketNFT.mint({"from": account, "value": MINT_PRICE})
+
+    # fails because account can't transfer token since neither owner nor approved
+    with brownie.reverts():
+        marketNFT.transferFrom(account, acc1, 1, {"from": account})
