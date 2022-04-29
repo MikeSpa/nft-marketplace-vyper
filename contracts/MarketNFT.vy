@@ -73,7 +73,7 @@ def isApprovedForAll(_owner: address, _operator: address) -> bool:
 
 @internal
 def _addToken(_to: address, _tokenId: uint256):
-    assert _to != ZERO_ADDRESS, "Can't transfer to null address"
+    assert _to != ZERO_ADDRESS, "MarketNFT: Can't transfer to null address"
     self.idToOwner[_tokenId] = _to
     self.ownerToCount[_to] += 1
     self.totalSupply += 1
@@ -81,7 +81,7 @@ def _addToken(_to: address, _tokenId: uint256):
 
 @internal
 def _removeToken(_from: address, _tokenId: uint256):
-    assert _from == self.idToOwner[_tokenId], "Not owner of the token"
+    assert _from == self.idToOwner[_tokenId], "MarketNFT: Not owner of the token"
     self.idToOwner[_tokenId] = ZERO_ADDRESS
     self.idToApproved[_tokenId] = ZERO_ADDRESS
     self.ownerToCount[_from] -= 1
@@ -90,8 +90,8 @@ def _removeToken(_from: address, _tokenId: uint256):
 
 @internal
 def _transfer(_from: address, _to: address, _tokenId: uint256):
-    assert _to != ZERO_ADDRESS, "Can't transfer to null address"
-    assert _tokenId < self.totalSupply, "Token doesn't exist" # should never fails since we always check ownership/approval first
+    assert _to != ZERO_ADDRESS, "MarketNFT: Can't transfer to null address"
+    assert _tokenId < self.totalSupply, "MarketNFT: Token doesn't exist" # should never fails since we always check ownership/approval first
     self._removeToken(_from, _tokenId)
     self._addToken(_to, _tokenId)
     log Transfer(_from, _to, _tokenId)
@@ -112,7 +112,7 @@ def _isOwnerOrApproved(_address: address, _tokenId: uint256) -> bool:
 def transferFrom(_from: address, _to: address, _tokenId: uint256):
     
     #the sender must be the owner or approved
-    assert self._isOwnerOrApproved(msg.sender, _tokenId), "Caller not approved"
+    assert self._isOwnerOrApproved(msg.sender, _tokenId), "MarketNFT: Caller not approved"
     
     self._transfer(_from, _to, _tokenId)
 
@@ -121,7 +121,7 @@ def transferFrom(_from: address, _to: address, _tokenId: uint256):
 def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]=b''):
     
     #the sender must be the owner or approved
-    assert self._isOwnerOrApproved(msg.sender, _tokenId), "Caller not approved"
+    assert self._isOwnerOrApproved(msg.sender, _tokenId), "MarketNFT: Caller not approved"
 
     self._transfer(_from, _to, _tokenId)
 
@@ -131,7 +131,7 @@ def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Byt
 
 @external
 def approve(_approved: address, _tokenId: uint256):
-    assert msg.sender == self.idToOwner[_tokenId], "Only the owner can approve"
+    assert msg.sender == self.idToOwner[_tokenId], "MarketNFT: Only the owner can approve"
     self.idToApproved[_tokenId] = _approved
     log Approval(msg.sender, _approved, _tokenId)
 
@@ -157,6 +157,6 @@ def setMintPrice(_newPrice: uint256):
 @payable
 @external
 def mint():
-    assert msg.value >= self.mintPrice
+    assert msg.value >= self.mintPrice, "MarketNFT: not enough ether"
     self._addToken(msg.sender, self.totalSupply)
     log Transfer(ZERO_ADDRESS, msg.sender, self.totalSupply-1)

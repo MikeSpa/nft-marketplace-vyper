@@ -56,7 +56,7 @@ def test_mint(marketNFT):
 def test_mint_revert_if_value_lower_than_price(marketNFT):
     account = get_account()
     # fails because you can't mint if you don't send `mintPrice`
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: not enough ether"):
         marketNFT.mint({"value": MINT_PRICE / 2})
 
 
@@ -92,12 +92,12 @@ def test_approve_revert_if_not_owner(marketNFT):
     assert marketNFT.getApproved(0) == acc1
 
     # fails because you can't approve unminted token
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Only the owner can approve"):
         marketNFT.approve(acc1, 1, {"from": account})
     assert marketNFT.getApproved(1) == ZERO_ADDRESS
 
     # fails because you can't approve unowned token
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Only the owner can approve"):
         marketNFT.approve(account, 0, {"from": acc2})
     assert marketNFT.getApproved(0) == acc1
 
@@ -137,11 +137,11 @@ def test_transferFrom_revert_if_not_owner(marketNFT):
     marketNFT.transferFrom(account, acc2, 2, {"from": account})
 
     # fails because you can't transfer unminted token
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Caller not approved"):
         marketNFT.transferFrom(account, acc2, 42, {"from": account})
 
     # fails because you can't transfer unowned token
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Caller not approved"):
         marketNFT.transferFrom(acc1, acc2, 1, {"from": account})
 
     assert marketNFT.ownerOf(0) == account
@@ -155,7 +155,7 @@ def test_transferFrom_revert_if_to_ZERO_ADDRESS(marketNFT):
     marketNFT.mint({"from": account, "value": MINT_PRICE})
 
     # fails because you can't transfer to ZERO_ADDRESS
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Can't transfer to null address"):
         marketNFT.transferFrom(account, ZERO_ADDRESS, 0, {"from": account})
 
     assert marketNFT.ownerOf(0) == account
@@ -215,7 +215,7 @@ def test_setApprovedForAll(marketNFT):
     assert marketNFT.isApprovedForAll(account, acc1) == False
 
     # fails because acc1 no longer operator
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Caller not approved"):
         marketNFT.transferFrom(account, acc2, 1, {"from": acc1})
 
     # Test Event
@@ -231,5 +231,5 @@ def test_transfer_revert_if_token_doesnt_exist(marketNFT):
     marketNFT.mint({"from": account, "value": MINT_PRICE})
 
     # fails because account can't transfer token since neither owner nor approved
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Caller not approved"):
         marketNFT.transferFrom(account, acc1, 1, {"from": account})
