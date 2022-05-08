@@ -28,8 +28,8 @@ event ApprovalForAll:
     _operator: indexed(address)
     _approved: bool 
 
-name: constant(String[9]) = "MarketNFT"  # TODO test to make sure the getter is still there
-symbol: constant(String[4]) = "MNFT"
+name: public(String[9])
+symbol: public(String[4])
 owner: public(address)
 totalSupply: public(uint256)
 
@@ -43,6 +43,8 @@ mintPrice: public(uint256)
 
 @external
 def __init__(_owner: address, _mintPrice: uint256):
+    self.name = "MarketNFT"
+    self.symbol = "MNFT"
     self.owner = _owner
     self.mintPrice = _mintPrice
 

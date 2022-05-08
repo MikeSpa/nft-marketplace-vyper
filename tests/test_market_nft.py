@@ -14,6 +14,14 @@ def marketNFT(MarketNFT):
     yield MarketNFT.deploy(owner, MINT_PRICE, {"from": owner})
 
 
+def test_contract_name(marketNFT):
+    assert marketNFT.name() == NAME
+
+
+def test_contract_symbol(marketNFT):
+    assert marketNFT.symbol() == SYMBOL
+
+
 def test_contract_mint_price(marketNFT):
     assert marketNFT.mintPrice() == MINT_PRICE
 
