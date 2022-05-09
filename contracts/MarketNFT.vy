@@ -40,6 +40,7 @@ ownerToApprovedForAll: public(HashMap[address, HashMap[address, bool]])
 
 mintPrice: public(uint256)
 
+#TODO add tokenURI to fully implements ERC721Metadata interface
 
 @external
 def __init__(_owner: address, _mintPrice: uint256):
@@ -49,24 +50,42 @@ def __init__(_owner: address, _mintPrice: uint256):
     self.mintPrice = _mintPrice
 
 
+# @notice Count all NFTs assigned to an owner
+# @dev NFTs assigned to the zero address are considered invalid, and this
+# function throws for queries about the zero address.
+# @param _owner An address for whom to query the balance
+# @return The number of NFTs owned by `_owner`, possibly zero
 @view
 @external
 def balanceOf(_owner: address) -> uint256:
     return self.ownerToCount[_owner]
 
 
+# @notice Find the owner of an NFT
+# @dev NFTs assigned to zero address are considered invalid, and queries
+# about them do throw.
+# @param _tokenId The identifier for an NFT
+# @return The address of the owner of the NFT
 @view
 @external
 def ownerOf(_tokenId: uint256) -> address:
     return self.idToOwner[_tokenId]
 
 
+# @notice Get the approved address for a single NFT
+# @dev Throws if `_tokenId` is not a valid NFT.
+# @param _tokenId The NFT to find the approved address for
+# @return The approved address for this NFT, or the zero address if there is none
 @view
 @external
 def getApproved(_tokenId: uint256) -> address:
     return self.idToApproved[_tokenId]
 
 
+# @notice Query if an address is an authorized operator for another address
+# @param _owner The address that owns the NFTs
+# @param _operator The address that acts on behalf of the owner
+# @return True if `_operator` is an approved operator for `_owner`, false otherwise
 @view
 @external
 def isApprovedForAll(_owner: address, _operator: address) -> bool:
@@ -109,7 +128,22 @@ def _isOwnerOrApproved(_address: address, _tokenId: uint256) -> bool:
     return (_address == owner or _address == approved or isApprovedForAll) 
 
 
+# @notice Transfers _tokenId from address _from to address _to
+# @dev Emit a Transfer Event
+# @param _from The address that sends the token
+# @param _to The address that should receive the token
+# @param _tokenId The token to transfer
 
+# @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+# TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+# THEY MAY BE PERMANENTLY LOST
+# @dev Throws unless `msg.sender` is the current owner, an authorized
+# operator, or the approved address for this NFT. Throws if `_from` is
+# not the current owner. Throws if `_to` is the zero address. Throws if
+# `_tokenId` is not a valid NFT.
+# @param _from The current owner of the NFT
+# @param _to The new owner
+# @param _tokenId The NFT to transfer
 @external
 def transferFrom(_from: address, _to: address, _tokenId: uint256):
     
@@ -118,7 +152,18 @@ def transferFrom(_from: address, _to: address, _tokenId: uint256):
     
     self._transfer(_from, _to, _tokenId)
 
-
+# @notice Transfers the ownership of an NFT from one address to another address
+# @dev Throws unless `msg.sender` is the current owner, an authorized
+# operator, or the approved address for this NFT. Throws if `_from` is
+# not the current owner. Throws if `_to` is the zero address. Throws if
+# `_tokenId` is not a valid NFT. When transfer is complete, this function
+# checks if `_to` is a smart contract (code size > 0). If so, it calls
+# `onERC721Received` on `_to` and throws if the return value is not
+# `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+# @param _from The current owner of the NFT
+# @param _to The new owner
+# @param _tokenId The NFT to transfer
+# @param data Additional data with no specified format, sent in call to `_to`
 @external
 def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]=b''):
     
@@ -131,34 +176,54 @@ def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Byt
         assert ERC721Receiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data) == keccak256("onERC721Received(address,address,uint256,bytes)")
 
 
+# @notice Change or reaffirm the approved address for an NFT
+# @dev The zero address indicates there is no approved address.
+# Throws unless `msg.sender` is the current NFT owner, or an authorized
+# operator of the current owner.
+# @param _approved The new approved NFT controller
+# @param _tokenId The NFT to approve
 @external
 def approve(_approved: address, _tokenId: uint256):
-    assert msg.sender == self.idToOwner[_tokenId], "MarketNFT: Only the owner can approve"
+    assert self._isOwnerOrApproved(msg.sender, _tokenId), "MarketNFT: Caller not approved"
     self.idToApproved[_tokenId] = _approved
     log Approval(msg.sender, _approved, _tokenId)
 
 
+# @notice Enable or disable approval for a third party ("operator") to manage
+# all of `msg.sender`'s assets
+# @dev Emits the ApprovalForAll event. Multiple operators per owner are allowed
+# @param _operator Address to add to the set of authorized operators
+# @param _approved True if the operator is approved, false to revoke approval
 @external
 def setApprovalForAll(_operator: address, _approved: bool):
     self.ownerToApprovedForAll[msg.sender][_operator] = _approved
     log ApprovalForAll(msg.sender, _operator, _approved)
 
+
+# @notice Query if a contract implements an interface
+# @param _interfaceID The interface identifier, as specified in ERC-165
+# @dev Interface identification is specified in ERC-165. This function
+#  uses less than 30,000 gas.
+# @return `true` if the contract implements `_interfaceID` and
+#  `_interfaceID` is not 0xffffffff, `false` otherwise
 #TODO
 @view
 @external
 def supportsInterface(_interfaceID: bytes32) -> bool:
     return False
 
-
+# @notice Set a mint price
+# @param _newPrice The new mint price
 @external
 def setMintPrice(_newPrice: uint256):
-    assert msg.sender == self.owner
+    assert msg.sender == self.owner, "MarketNFT: Only owner can do that"
     self.mintPrice = _newPrice
 
-
+# @notice Mint an NFT
+#TODO only marketplace can mint, add _to and add cost in marketplace contract
 @payable
 @external
 def mint():
-    assert msg.value >= self.mintPrice, "MarketNFT: not enough ether"
+    assert msg.value >= self.mintPrice, "MarketNFT: Not enough ether"
     self._addToken(msg.sender, self.totalSupply)
     log Transfer(ZERO_ADDRESS, msg.sender, self.totalSupply-1)

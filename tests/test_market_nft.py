@@ -7,6 +7,9 @@ NAME = "MarketNFT"
 SYMBOL = "MNFT"
 MINT_PRICE = ONE
 
+# TODO test balanceOf ZERO
+# TODO same ownerOf
+
 
 @pytest.fixture
 def marketNFT(MarketNFT):
@@ -64,7 +67,7 @@ def test_mint(marketNFT):
 def test_mint_revert_if_value_lower_than_price(marketNFT):
     account = get_account()
     # fails because you can't mint if you don't send `mintPrice`
-    with brownie.reverts("MarketNFT: not enough ether"):
+    with brownie.reverts("MarketNFT: Not enough ether"):
         marketNFT.mint({"value": MINT_PRICE / 2})
 
 
@@ -100,12 +103,12 @@ def test_approve_revert_if_not_owner(marketNFT):
     assert marketNFT.getApproved(0) == acc1
 
     # fails because you can't approve unminted token
-    with brownie.reverts("MarketNFT: Only the owner can approve"):
+    with brownie.reverts("MarketNFT: Caller not approved"):
         marketNFT.approve(acc1, 1, {"from": account})
     assert marketNFT.getApproved(1) == ZERO_ADDRESS
 
     # fails because you can't approve unowned token
-    with brownie.reverts("MarketNFT: Only the owner can approve"):
+    with brownie.reverts("MarketNFT: Caller not approved"):
         marketNFT.approve(account, 0, {"from": acc2})
     assert marketNFT.getApproved(0) == acc1
 
