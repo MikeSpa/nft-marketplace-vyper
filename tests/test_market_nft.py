@@ -66,13 +66,6 @@ def test_mint(marketNFT):
     assert tx.events[0]["_tokenId"] == 2
 
 
-# def test_mint_revert_if_value_lower_than_price(marketNFT):
-#     account = get_account()
-#     # fails because you can't mint if you don't send `mintPrice`
-#     with brownie.reverts("MarketNFT: Not enough ether"):
-#         marketNFT.mint(account, {"value": MINT_PRICE / 2})
-
-
 def test_approve(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)

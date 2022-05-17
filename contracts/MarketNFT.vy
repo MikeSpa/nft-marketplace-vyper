@@ -28,17 +28,17 @@ event ApprovalForAll:
     _operator: indexed(address)
     _approved: bool 
 
-name: public(String[9])
-symbol: public(String[4])
-owner: public(address)
-totalSupply: public(uint256)
+name: public(String[9])  # Nmee of the collection
+symbol: public(String[4])  # Symbol of the collection
+owner: public(address)  # Owner of the contract, can mint NFT
+totalSupply: public(uint256)  # Total number of NFT
 
-ownerToCount: public(HashMap[address, uint256])
-idToOwner: public(HashMap[uint256, address])
-idToApproved: public(HashMap[uint256, address])
-ownerToApprovedForAll: public(HashMap[address, HashMap[address, bool]])
+ownerToCount: public(HashMap[address, uint256])  # mapping owner -> # of NFT in this collection
+idToOwner: public(HashMap[uint256, address])  # mapping tokenId -> owner
+idToApproved: public(HashMap[uint256, address])  # mapping tokenId -> address approved 
+ownerToApprovedForAll: public(HashMap[address, HashMap[address, bool]])  # mapping owner -> operator -> bool
 
-mintPrice: public(uint256)
+mintPrice: public(uint256)  # Mint price for an NFT
 
 #TODO add tokenURI to fully implements ERC721Metadata interface
 

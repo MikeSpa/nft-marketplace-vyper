@@ -29,7 +29,7 @@ All contract have tests written in python with pytest.
 
 
 ## TODO
-- [ ]: add comment to MarketNFT
+- [x]: add comment to MarketNFT
 - [ ]: add Bid functionality + test
 - [x]: add MarketCoin in MarketPlace
 - [ ]: ERC721Metadata for MArketNFT
