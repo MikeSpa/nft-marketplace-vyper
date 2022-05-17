@@ -32,7 +32,7 @@ All contract have tests written in python with pytest.
 - [x]: add comment to MarketNFT
 - [ ]: add Bid functionality + test
 - [x]: add MarketCoin in MarketPlace
-- [ ]: ERC721Metadata for MArketNFT
+- [ ]: ERC721Metadata for MarketNFT
 - [x]: improve test coverage for marketplace
 - [ ]: MarketNFT::safeTransferFrom()
 - [ ]: coverage for MarketNFT

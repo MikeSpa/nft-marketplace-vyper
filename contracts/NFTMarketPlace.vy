@@ -1,6 +1,10 @@
 #NFT MarketPlace
 # @version 0.3.1
 
+
+# TODO: add onERC721Received function and find something fun to do with it (maybe users can use it to burn a MarketNFT and potentially win smth)
+
+# interface for a ERC-721 token, so NFT can be bought and sold on this marketplace
 interface NFToken:
     def onERC721Received(
             _operator: address,
@@ -10,17 +14,15 @@ interface NFToken:
         ) -> bytes32: view
     def balanceOf(_owner: address) -> uint256: view
     def ownerOf(_tokenId: uint256) -> address: view
-    def totalSupply() -> uint256: view # move to MarketNFT only not required for other NFT
-    def mintPrice() -> uint256: view
     def getApproved(_tokenId: uint256) -> address: view
     def isApprovedForAll(_owner: address, _operator: address) -> bool: nonpayable
     def transferFrom(_from: address, _to: address, _tokenId: uint256): nonpayable
     def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]): nonpayable
     def approve(_approved: address, _tokenId: uint256): nonpayable
     def setApprovalForAll(_operator: address, _approved: bool): nonpayable
-    def setMintPrice(_newPrice: uint256): nonpayable
-    def mint(): payable
 
+
+# interface for the ERC-20 MarketCoin token used to rewarded users
 interface MarketCoin:
     def totalSupply() -> uint256: view
     def balanceOf(_owner: address) -> uint256: view
@@ -32,6 +34,8 @@ interface MarketCoin:
     def mint(_to: address, _amount: uint256): nonpayable
     def burn(_amount: uint256) -> bool: nonpayable
 
+
+# interface for the MarketNFT NFT
 interface MarketNFT:
     def onERC721Received(
             _operator: address,
@@ -41,7 +45,7 @@ interface MarketNFT:
         ) -> bytes32: view
     def balanceOf(_owner: address) -> uint256: view
     def ownerOf(_tokenId: uint256) -> address: view
-    def totalSupply() -> uint256: view # move to MarketNFT only not required for other NFT
+    def totalSupply() -> uint256: view
     def mintPrice() -> uint256: view
     def getApproved(_tokenId: uint256) -> address: view
     def isApprovedForAll(_owner: address, _operator: address) -> bool: nonpayable
