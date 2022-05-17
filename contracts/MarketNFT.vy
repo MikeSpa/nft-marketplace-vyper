@@ -28,8 +28,8 @@ event ApprovalForAll:
     _operator: indexed(address)
     _approved: bool 
 
-name: public(String[9])  # Nmee of the collection
-symbol: public(String[4])  # Symbol of the collection
+name: public(String[9])  # Name of the collection: "MarketNFT"
+symbol: public(String[4])  # Symbol of the collection: "MNFT"
 owner: public(address)  # Owner of the contract, can mint NFT
 totalSupply: public(uint256)  # Total number of NFT
 
@@ -58,6 +58,7 @@ def __init__(_owner: address, _mintPrice: uint256):
 @view
 @external
 def balanceOf(_owner: address) -> uint256:
+    assert _owner != ZERO_ADDRESS
     return self.ownerToCount[_owner]
 
 
@@ -69,7 +70,9 @@ def balanceOf(_owner: address) -> uint256:
 @view
 @external
 def ownerOf(_tokenId: uint256) -> address:
-    return self.idToOwner[_tokenId]
+    owner: address = self.idToOwner[_tokenId]
+    assert owner != ZERO_ADDRESS
+    return owner
 
 
 # @notice Get the approved address for a single NFT

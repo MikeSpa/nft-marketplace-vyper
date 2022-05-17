@@ -7,9 +7,6 @@ NAME = "MarketNFT"
 SYMBOL = "MNFT"
 MINT_PRICE = ONE
 
-# TODO test balanceOf ZERO
-# TODO same ownerOf
-
 
 @pytest.fixture
 def marketNFT(MarketNFT):
@@ -32,6 +29,25 @@ def test_contract_mint_price(marketNFT):
 
 def test_initial_totalSupply(marketNFT):
     assert marketNFT.totalSupply() == 0
+
+
+def test_balanceOf(marketNFT):
+    account = get_account()
+    assert marketNFT.balanceOf(account) == 0
+    marketNFT.mint(account, {"from": account})
+    assert marketNFT.balanceOf(account) == 1
+    # fails because address is 0x00
+    with brownie.reverts():
+        marketNFT.balanceOf(ZERO_ADDRESS)
+
+
+def test_ownerOf(marketNFT):
+    account = get_account()
+    with brownie.reverts():
+        marketNFT.ownerOf(0) == ZERO_ADDRESS
+
+    marketNFT.mint(account, {"from": account})
+    marketNFT.ownerOf(0) == account
 
 
 def test_setMintPrice(marketNFT):
