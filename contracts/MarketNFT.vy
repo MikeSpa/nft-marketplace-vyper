@@ -220,10 +220,10 @@ def setMintPrice(_newPrice: uint256):
     self.mintPrice = _newPrice
 
 # @notice Mint an NFT
-#TODO only marketplace can mint, add _to and add cost in marketplace contract
-@payable
+# @param _to The address that will receive the NFT
+# @dev An NFT can only be mint by the owner, e.g. a marketplace. Necessary checks need to be done there
 @external
-def mint():
-    assert msg.value >= self.mintPrice, "MarketNFT: Not enough ether"
+def mint(_to: address):
+    assert msg.sender == self.owner, "MarketNFT: Only owner can mint"
     self._addToken(msg.sender, self.totalSupply)
     log Transfer(ZERO_ADDRESS, msg.sender, self.totalSupply-1)

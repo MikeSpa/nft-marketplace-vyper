@@ -14,7 +14,8 @@ MINT_PRICE = ONE
 @pytest.fixture
 def marketNFT(MarketNFT):
     owner = get_account(index=8)
-    yield MarketNFT.deploy(owner, MINT_PRICE, {"from": owner})
+    account = get_account()
+    yield MarketNFT.deploy(account, MINT_PRICE, {"from": owner})
 
 
 def test_contract_name(marketNFT):
@@ -34,22 +35,23 @@ def test_initial_totalSupply(marketNFT):
 
 
 def test_setMintPrice(marketNFT):
+    account = get_account()
     assert marketNFT.mintPrice() == MINT_PRICE
-    marketNFT.setMintPrice(8)
+    marketNFT.setMintPrice(8, {"from": account})
     assert marketNFT.mintPrice() == 8
 
 
 def test_mint(marketNFT):
     account = get_account()
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
     assert marketNFT.balanceOf(account) == 1
     assert marketNFT.ownerOf(0) == account
     assert marketNFT.idToOwner(0) == account
     assert marketNFT.getApproved(0) == ZERO_ADDRESS
     assert marketNFT.totalSupply() == 1
 
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    tx = marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
+    tx = marketNFT.mint(account, {"from": account})
     assert marketNFT.balanceOf(account) == 3
     assert marketNFT.ownerOf(0) == account
     assert marketNFT.ownerOf(1) == account
@@ -64,20 +66,20 @@ def test_mint(marketNFT):
     assert tx.events[0]["_tokenId"] == 2
 
 
-def test_mint_revert_if_value_lower_than_price(marketNFT):
-    account = get_account()
-    # fails because you can't mint if you don't send `mintPrice`
-    with brownie.reverts("MarketNFT: Not enough ether"):
-        marketNFT.mint({"value": MINT_PRICE / 2})
+# def test_mint_revert_if_value_lower_than_price(marketNFT):
+#     account = get_account()
+#     # fails because you can't mint if you don't send `mintPrice`
+#     with brownie.reverts("MarketNFT: Not enough ether"):
+#         marketNFT.mint(account, {"value": MINT_PRICE / 2})
 
 
 def test_approve(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
     acc2 = get_account(index=2)
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
     assert marketNFT.getApproved(0) == ZERO_ADDRESS
     marketNFT.approve(acc1, 0, {"from": account})
     marketNFT.approve(acc1, 1, {"from": account})
@@ -97,7 +99,7 @@ def test_approve_revert_if_not_owner(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
     acc2 = get_account(index=2)
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
     assert marketNFT.getApproved(0) == ZERO_ADDRESS
     marketNFT.approve(acc1, 0, {"from": account})
     assert marketNFT.getApproved(0) == acc1
@@ -117,9 +119,9 @@ def test_transferFrom(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
     acc2 = get_account(index=2)
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
 
     marketNFT.transferFrom(account, acc1, 1, {"from": account})
     marketNFT.transferFrom(account, acc2, 2, {"from": account})
@@ -140,9 +142,9 @@ def test_transferFrom_revert_if_not_owner(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
     acc2 = get_account(index=2)
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
 
     marketNFT.transferFrom(account, acc1, 1, {"from": account})
     marketNFT.transferFrom(account, acc2, 2, {"from": account})
@@ -163,7 +165,7 @@ def test_transferFrom_revert_if_not_owner(marketNFT):
 
 def test_transferFrom_revert_if_to_ZERO_ADDRESS(marketNFT):
     account = get_account()
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
 
     # fails because you can't transfer to ZERO_ADDRESS
     with brownie.reverts("MarketNFT: Can't transfer to null address"):
@@ -176,8 +178,8 @@ def test_transferFrom_remove_approval(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
     acc2 = get_account(index=2)
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
 
     # approve acc1 for token 0 and 1
     marketNFT.approve(acc1, 0, {"from": account})
@@ -199,8 +201,8 @@ def test_setApprovedForAll(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
     acc2 = get_account(index=2)
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
 
     # approve acc1 for token 0 and 1
     marketNFT.setApprovalForAll(acc1, True, {"from": account})
@@ -239,7 +241,7 @@ def test_setApprovedForAll(marketNFT):
 def test_transfer_revert_if_token_doesnt_exist(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
-    marketNFT.mint({"from": account, "value": MINT_PRICE})
+    marketNFT.mint(account, {"from": account})
 
     # fails because account can't transfer token since neither owner nor approved
     with brownie.reverts("MarketNFT: Caller not approved"):

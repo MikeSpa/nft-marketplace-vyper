@@ -7,13 +7,12 @@ from scripts.helpful_scripts import (
     CENT,
 )
 import brownie
-from brownie import Contract, MarketCoin
+from brownie import Contract, MarketCoin, MarketNFT
 
 NAME = "NFT1"
 SYMBOL = "1"
 MINT_PRICE = POINT_ONE
-
-# TODO assert balance everywhere
+MARKETNFT_MINT_PRICE = POINT_ONE
 
 
 @pytest.fixture
@@ -22,7 +21,9 @@ def marketplace(NFTMarketPlace, MarketCoin):
     marketcoin = MarketCoin.deploy(owner, {"from": owner})
 
     marketplace = NFTMarketPlace.deploy({"from": owner})
+    marketnft = MarketNFT.deploy(marketplace, MARKETNFT_MINT_PRICE, {"from": owner})
     marketplace.setMarketCoin(marketcoin, {"from": owner})
+    marketplace.setMarketNFT(marketnft, {"from": owner})
     marketcoin.setOwner(marketplace, {"from": owner})
     return marketplace
 
@@ -82,6 +83,18 @@ def test_set_marketcoin(marketplace):
     with brownie.reverts("Only the owner can do that"):
         marketplace.setMarketCoin(marketcoin, {"from": account})
     marketplace.setMarketCoin(marketcoin, {"from": owner})
+
+
+def test_set_marketNFT(marketplace):
+    account = get_account()
+    owner = get_account(index=8)
+
+    marketNFT = MarketNFT.deploy(
+        account, MARKETNFT_MINT_PRICE, {"from": account}
+    )  # TODO non zero mint price
+    with brownie.reverts("Only the owner can do that"):
+        marketplace.setMarketNFT(marketNFT, {"from": account})
+    marketplace.setMarketNFT(marketNFT, {"from": owner})
 
 
 def test_sell(marketplace, NFT1):
@@ -425,7 +438,57 @@ def test_marketcoin_balance(marketplace, NFT1):
     marketplace.buy(2, {"from": acc2, "value": priceNFT})
     marketplace.buy(3, {"from": account, "value": priceNFT})
 
-    # Money
+    # Money marketCoin rewards
     assert marketCoin.balanceOf(account) == init_balance_account + 5 * priceNFT / 10
     assert marketCoin.balanceOf(acc1) == init_balance_acc1 + 2 * priceNFT / 10
     assert marketCoin.balanceOf(acc2) == init_balance_acc2 + priceNFT / 10
+
+
+def test_mint_marketNFT(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+
+    # some buy/sell so accounts have MarketCoin balance
+    NFT1.setApprovalForAll(marketplace, True)
+    priceNFT = ONE
+    marketplace.sell(NFT1.address, 0, priceNFT, {"from": account, "value": 0})
+
+    marketplace.buy(0, {"from": acc1, "value": priceNFT})
+
+    marketCoin_address = marketplace.marketCoin()
+    marketCoin = Contract.from_abi(MarketCoin._name, marketCoin_address, MarketCoin.abi)
+    init_balance_account = marketCoin.balanceOf(account)
+
+    assert marketCoin.balanceOf(account) == priceNFT / 10 == POINT_ONE
+    assert marketCoin.balanceOf(account) >= MARKETNFT_MINT_PRICE
+
+    marketCoin.approve(marketplace, MARKETNFT_MINT_PRICE, {"from": account})
+    marketplace.mintMarketNFT({"from": account})
+
+    assert marketCoin.balanceOf(account) == init_balance_account - MARKETNFT_MINT_PRICE
+
+
+def test_mint_marketNFT_revert(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+
+    # some buy/sell so accounts have MarketCoin balance
+    NFT1.setApprovalForAll(marketplace, True)
+    priceNFT = ONE
+    marketplace.sell(NFT1.address, 0, priceNFT, {"from": account, "value": 0})
+
+    marketplace.buy(0, {"from": acc1, "value": priceNFT})
+
+    marketCoin_address = marketplace.marketCoin()
+    marketCoin = Contract.from_abi(MarketCoin._name, marketCoin_address, MarketCoin.abi)
+
+    # fails because not enough MarketCoin approved
+    with brownie.reverts():
+        marketplace.mintMarketNFT({"from": account})
+
+    # fails because not enough MarketCoin
+    marketCoin.burn(1, {"from": account})
+    assert marketCoin.balanceOf(account) < MARKETNFT_MINT_PRICE
+    marketCoin.approve(marketplace, MARKETNFT_MINT_PRICE, {"from": account})
+    with brownie.reverts():
+        marketplace.mintMarketNFT({"from": account})

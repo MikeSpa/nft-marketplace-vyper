@@ -10,6 +10,8 @@ interface NFToken:
         ) -> bytes32: view
     def balanceOf(_owner: address) -> uint256: view
     def ownerOf(_tokenId: uint256) -> address: view
+    def totalSupply() -> uint256: view # move to MarketNFT only not required for other NFT
+    def mintPrice() -> uint256: view
     def getApproved(_tokenId: uint256) -> address: view
     def isApprovedForAll(_owner: address, _operator: address) -> bool: nonpayable
     def transferFrom(_from: address, _to: address, _tokenId: uint256): nonpayable
@@ -29,6 +31,26 @@ interface MarketCoin:
     def approve(_spender: address, _value: uint256) -> bool: nonpayable
     def mint(_to: address, _amount: uint256): nonpayable
     def burn(_amount: uint256) -> bool: nonpayable
+
+interface MarketNFT:
+    def onERC721Received(
+            _operator: address,
+            _from: address,
+            _tokenId: uint256,
+            _data: Bytes[1024]
+        ) -> bytes32: view
+    def balanceOf(_owner: address) -> uint256: view
+    def ownerOf(_tokenId: uint256) -> address: view
+    def totalSupply() -> uint256: view # move to MarketNFT only not required for other NFT
+    def mintPrice() -> uint256: view
+    def getApproved(_tokenId: uint256) -> address: view
+    def isApprovedForAll(_owner: address, _operator: address) -> bool: nonpayable
+    def transferFrom(_from: address, _to: address, _tokenId: uint256): nonpayable
+    def safeTransferFrom(_from: address, _to: address, _tokenId: uint256, _data: Bytes[1024]): nonpayable
+    def approve(_approved: address, _tokenId: uint256): nonpayable
+    def setApprovalForAll(_operator: address, _approved: bool): nonpayable
+    def setMintPrice(_newPrice: uint256): nonpayable
+    def mint(_to: address): nonpayable
 
 event Posting:
     _seller: address
@@ -97,6 +119,11 @@ def setSellingFee(_newFee: uint256):
 def setMarketCoin(_marketCoinAddress: address):
     assert msg.sender == self.owner, "Only the owner can do that"
     self.marketCoin = _marketCoinAddress
+
+@external
+def setMarketNFT(_marketNFTAddress: address):
+    assert msg.sender == self.owner, "Only the owner can do that"
+    self.marketNFT = _marketNFTAddress
 
 
 @internal
@@ -193,6 +220,18 @@ def buy(_id: uint256):
 def withdraw(_amount: uint256):
     assert msg.sender == self.owner, "Only the owner can withdraw"
     send(self.owner, _amount)
+
+
+#TODO maybe the mint price should only be in here
+@external
+def mintMarketNFT():
+    # Receive the marketcoin amount
+    mintPrice: uint256 = MarketNFT(self.marketNFT).mintPrice()
+    MarketCoin(self.marketCoin).transferFrom(msg.sender, self.marketplace, mintPrice)
+    # Mint the NFT
+    MarketNFT(self.marketNFT).mint(msg.sender)
+    
+
 
 #TODO handle if seller transfer nft
 

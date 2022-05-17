@@ -1,7 +1,10 @@
 # NFT Marketplace in Vyper
 
 
-Marketplace for NFT where users can sell and buy any ERC721 NFTs. The more a user buy/sell NFT the more MarketCoin token he will receive. All contracts are written in Vyper.
+Marketplace for NFT where users can sell and buy any ERC721 NFTs. The more a user buy/sell NFTs on the marketplace, the more MarketCoin token he will receive. He can then use those coins to mint MarketNFT.
+
+All contracts have a full suite of tests.
+All contracts are written in Vyper.
 
 
 ## Contract
@@ -16,10 +19,10 @@ Generic ERC-20 token
 Generic ERC-721 token
 
 ### MarketCoin
-ERC-20 token for the marketplace. User buying and selling NFT on the marketplace are rewarded with MarketCoin token.
+Custom  ERC-20 token for the marketplace. User buying and selling NFT on the marketplace are rewarded with MarketCoin token. Can be use to mint MarketNFT.
 
 ### MarketNFT
-Custom ERC-721 token for the marketplace, user can buy it on the marketplace with Marketcoin instead of ETH. Can also be buy/sell like a regular ERC-721 token.
+Custom ERC-721 token for the marketplace, user can mint it on the marketplace with Marketcoin instead of ETH. Once minted, can also be buy/sell on any marketplace like a regular ERC-721 token.
 
 ## Test
 All contract have tests written in python with pytest.
@@ -29,5 +32,7 @@ All contract have tests written in python with pytest.
 - [ ]: add comment to MarketNFT
 - [ ]: add Bid functionality + test
 - [x]: add MarketCoin in MarketPlace
-- [ ]: add autho for approved address
-- [ ]: improve test coverage for marketplace
+- [ ]: ERC721Metadata for MArketNFT
+- [x]: improve test coverage for marketplace
+- [ ]: MarketNFT::safeTransferFrom()
+- [ ]: coverage for MarketNFT
