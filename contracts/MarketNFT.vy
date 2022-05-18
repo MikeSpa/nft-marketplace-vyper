@@ -58,7 +58,7 @@ def __init__(_owner: address, _mintPrice: uint256):
 @view
 @external
 def balanceOf(_owner: address) -> uint256:
-    assert _owner != ZERO_ADDRESS
+    assert _owner != ZERO_ADDRESS, "MarketNFT: ZERO_ADDRESS cannot own NFTs"
     return self.ownerToCount[_owner]
 
 
@@ -71,7 +71,7 @@ def balanceOf(_owner: address) -> uint256:
 @external
 def ownerOf(_tokenId: uint256) -> address:
     owner: address = self.idToOwner[_tokenId]
-    assert owner != ZERO_ADDRESS
+    assert owner != ZERO_ADDRESS, "MarketNFT: Token doesn't exist"
     return owner
 
 

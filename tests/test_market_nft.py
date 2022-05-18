@@ -37,13 +37,13 @@ def test_balanceOf(marketNFT):
     marketNFT.mint(account, {"from": account})
     assert marketNFT.balanceOf(account) == 1
     # fails because address is 0x00
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: ZERO_ADDRESS cannot own NFTs"):
         marketNFT.balanceOf(ZERO_ADDRESS)
 
 
 def test_ownerOf(marketNFT):
     account = get_account()
-    with brownie.reverts():
+    with brownie.reverts("MarketNFT: Token doesn't exist"):
         marketNFT.ownerOf(0) == ZERO_ADDRESS
 
     marketNFT.mint(account, {"from": account})
@@ -169,7 +169,8 @@ def test_transferFrom_revert_if_not_owner(marketNFT):
     assert marketNFT.ownerOf(0) == account
     assert marketNFT.ownerOf(1) == acc1
     assert marketNFT.ownerOf(2) == acc2
-    assert marketNFT.ownerOf(42) == ZERO_ADDRESS
+    with brownie.reverts("MarketNFT: Token doesn't exist"):
+        marketNFT.ownerOf(42)
 
 
 def test_transferFrom_revert_if_to_ZERO_ADDRESS(marketNFT):
