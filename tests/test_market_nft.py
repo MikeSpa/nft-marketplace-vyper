@@ -248,6 +248,35 @@ def test_transferFrom_remove_approval(marketNFT):
     assert marketNFT.getApproved(1) == acc1
 
 
+def test_safeTransferFrom(marketNFT):
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
+
+    # regular safeTransferFrom to an EOA with no data
+    marketNFT.safeTransferFrom(account, acc1, 1, {"from": account})
+    # regular safeTransferFrom to an EOA with data
+    marketNFT.safeTransferFrom(account, acc2, 2, 0x6E7370616872, {"from": account})
+    tx = marketNFT.safeTransferFrom(acc1, acc2, 1, 0x766972676F72756661, {"from": acc1})
+
+    assert marketNFT.ownerOf(0) == account
+    assert marketNFT.ownerOf(1) == acc2
+    assert marketNFT.ownerOf(2) == acc2
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == acc1
+    assert tx.events[0]["_to"] == acc2
+    assert tx.events[0]["_tokenId"] == 1
+
+    # fails because caller not approved
+    with brownie.reverts("MarketNFT: Caller not approved"):
+        marketNFT.safeTransferFrom(account, acc2, 1, {"from": acc1})
+
+
 def test_setApprovedForAll(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
@@ -313,3 +342,12 @@ def test_remove_token_revert(marketNFT):
     # fails because account doesn't own token 1
     with brownie.reverts("MarketNFT: Not owner of the token"):
         marketNFT.transferFrom(account, acc2, 1, {"from": account})
+
+
+def test_add_token_revert(marketNFT):
+    account = get_account()
+    marketNFT.mint(account, {"from": account})
+
+    # fails because ZERO_ADDRESS can't receive NFT
+    with brownie.reverts("MarketNFT: Can't transfer to null address"):
+        marketNFT.mint(ZERO_ADDRESS, {"from": account})
