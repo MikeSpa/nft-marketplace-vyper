@@ -228,5 +228,5 @@ def setMintPrice(_newPrice: uint256):
 @external
 def mint(_to: address):
     assert msg.sender == self.owner, "MarketNFT: Only owner can mint"
-    self._addToken(msg.sender, self.totalSupply)
-    log Transfer(ZERO_ADDRESS, msg.sender, self.totalSupply-1)
+    self._addToken(_to, self.totalSupply)
+    log Transfer(ZERO_ADDRESS, _to, self.totalSupply-1)

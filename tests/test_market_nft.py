@@ -86,6 +86,33 @@ def test_mint(marketNFT):
     assert tx.events[0]["_tokenId"] == 2
 
 
+def test_mint_argument_to(marketNFT):
+    # test that mint send the NFT to the _to address and not the minter
+    account = get_account()
+    acc1 = get_account(index=1)
+    marketNFT.mint(acc1, {"from": account})
+    assert marketNFT.balanceOf(acc1) == 1
+    assert marketNFT.ownerOf(0) == acc1
+    assert marketNFT.idToOwner(0) == acc1
+    assert marketNFT.getApproved(0) == ZERO_ADDRESS
+    assert marketNFT.totalSupply() == 1
+
+    marketNFT.mint(acc1, {"from": account})
+    tx = marketNFT.mint(acc1, {"from": account})
+    assert marketNFT.balanceOf(acc1) == 3
+    assert marketNFT.ownerOf(0) == acc1
+    assert marketNFT.ownerOf(1) == acc1
+    assert marketNFT.ownerOf(2) == acc1
+    assert marketNFT.getApproved(1) == ZERO_ADDRESS
+    assert marketNFT.totalSupply() == 3
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == ZERO_ADDRESS
+    assert tx.events[0]["_to"] == acc1
+    assert tx.events[0]["_tokenId"] == 2
+
+
 def test_mint_revert(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
@@ -270,3 +297,19 @@ def test_transfer_revert_if_token_doesnt_exist(marketNFT):
     # fails because account can't transfer token since neither owner nor approved
     with brownie.reverts("MarketNFT: Caller not approved"):
         marketNFT.transferFrom(account, acc1, 1, {"from": account})
+
+
+def test_remove_token_revert(marketNFT):
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(acc1, {"from": account})
+
+    # acc1 give approval to account
+    assert marketNFT.ownerOf(1) == acc1
+    marketNFT.approve(account, 1, {"from": acc1})
+
+    # fails because account doesn't own token 1
+    with brownie.reverts("MarketNFT: Not owner of the token"):
+        marketNFT.transferFrom(account, acc2, 1, {"from": account})
