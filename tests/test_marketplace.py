@@ -65,10 +65,10 @@ def test_set_fee_revert(marketplace):
     assert marketplace.sellingFee() == 0
 
     # fails because marketplace not operator
-    with brownie.reverts("Only the owner can do that"):
+    with brownie.reverts("MarketPlace: Only the owner can do that"):
         marketplace.setPostingFee(POINT_ONE, {"from": acc1})
     # fails because marketplace not operator
-    with brownie.reverts("Only the owner can do that"):
+    with brownie.reverts("MarketPlace: Only the owner can do that"):
         marketplace.setSellingFee(5, {"from": acc1})
 
     assert marketplace.postingFee() == 0
@@ -80,7 +80,7 @@ def test_set_marketcoin(marketplace):
     owner = get_account(index=8)
 
     marketcoin = MarketCoin.deploy(account, {"from": account})
-    with brownie.reverts("Only the owner can do that"):
+    with brownie.reverts("MarketPlace: Only the owner can do that"):
         marketplace.setMarketCoin(marketcoin, {"from": account})
     marketplace.setMarketCoin(marketcoin, {"from": owner})
 
@@ -89,10 +89,8 @@ def test_set_marketNFT(marketplace):
     account = get_account()
     owner = get_account(index=8)
 
-    marketNFT = MarketNFT.deploy(
-        account, MARKETNFT_MINT_PRICE, {"from": account}
-    )  # TODO non zero mint price
-    with brownie.reverts("Only the owner can do that"):
+    marketNFT = MarketNFT.deploy(account, MARKETNFT_MINT_PRICE, {"from": account})
+    with brownie.reverts("MarketPlace: Only the owner can do that"):
         marketplace.setMarketNFT(marketNFT, {"from": account})
     marketplace.setMarketNFT(marketNFT, {"from": owner})
 
@@ -131,18 +129,18 @@ def test_sell_revert(marketplace, NFT1):
     owner = get_account(index=8)
 
     # fails because account don't own the token #10
-    with brownie.reverts("Only the owner of the token can sell it"):
+    with brownie.reverts("MarketPlace: Only the owner of the token can sell it"):
         marketplace.sell(NFT1.address, 10, ONE * 42, {"from": account})
 
     # fails because marketplace not operator
     with brownie.reverts(
-        "The marketplace doesn't have authorization to sell this token for this user"
+        "MarketPlace: The marketplace doesn't have authorization to sell this token for this user"
     ):
         marketplace.sell(NFT1.address, 0, ONE * 42, {"from": account})
 
     marketplace.setPostingFee(POINT_ONE, {"from": owner})
     # fails because amount sent is below posting fee
-    with brownie.reverts("Amount sent is below postingFee"):
+    with brownie.reverts("MarketPlace: Amount sent is below postingFee"):
         marketplace.sell(NFT1, 0, ONE, {"from": account})
 
 
@@ -170,17 +168,19 @@ def test_cancelSell_revert(marketplace, NFT1):
     marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": 0})
 
     # fails because only seller can cancel
-    with brownie.reverts("Only the seller can cancel"):
+    with brownie.reverts("MarketPlace: Only the seller can cancel"):
         marketplace.cancelSell(0, {"from": acc1})
 
     marketplace.buy(0, {"from": acc2, "value": ONE})
     # fails because token already bought
-    with brownie.reverts("Token already sold"):
+    with brownie.reverts("MarketPlace: Token already sold"):
         marketplace.cancelSell(0, {"from": account})
 
     marketplace.cancelSell(1, {"from": account})
     # fails because listing already cancel
-    with brownie.reverts("Token not for sale (already cancel or doesn't exist)"):
+    with brownie.reverts(
+        "MarketPlace: Token not for sale (already cancel or doesn't exist)"
+    ):
         marketplace.cancelSell(1, {"from": account})
 
 
@@ -202,7 +202,7 @@ def test_updateSell(marketplace, NFT1):
     assert tx.events[0]["_listing"][3] == ONE * 2
 
     # fails because value below price
-    with brownie.reverts("Not enough ether sent"):
+    with brownie.reverts("MarketPlace: Not enough ether sent"):
         marketplace.buy(1, {"from": acc1, "value": ONE})
 
     marketplace.buy(1, {"from": acc1, "value": ONE * 2})
@@ -217,16 +217,18 @@ def test_updateSell_revert(marketplace, NFT1):
     # marketplace.sell(NFT1.address, 1, ONE, {"from": account, "value": ONE})
 
     # fails because same price
-    with brownie.reverts("The price need to be different"):
+    with brownie.reverts("MarketPlace: The price need to be different"):
         marketplace.updateSell(0, ONE, {"from": account})
 
     # fails because not seller
-    with brownie.reverts("Only the seller can update"):
+    with brownie.reverts("MarketPlace: Only the seller can update"):
         marketplace.updateSell(0, ONE * 2, {"from": acc1})
 
     marketplace.buy(0, {"from": acc1, "value": ONE})
     # fails because not for sale
-    with brownie.reverts("Token not for sale (already sold, cancel or doesn't exist)"):
+    with brownie.reverts(
+        "MarketPlace: Token not for sale (already sold, cancel or doesn't exist)"
+    ):
         marketplace.updateSell(0, ONE * 2, {"from": account})
 
 
@@ -293,21 +295,21 @@ def test_buy_revert(marketplace, NFT1):
     marketplace.sell(NFT1.address, 2, ONE, {"from": account})
 
     # fails because value below price
-    with brownie.reverts("Not enough ether sent"):
+    with brownie.reverts("MarketPlace: Not enough ether sent"):
         marketplace.buy(0, {"from": acc1, "value": POINT_ONE})
 
     marketplace.buy(0, {"from": acc2, "value": ONE})
     # fails because token already bought
-    with brownie.reverts("Token no longer for sale"):
+    with brownie.reverts("MarketPlace: Token no longer for sale"):
         marketplace.buy(0, {"from": acc1, "value": ONE})
 
     marketplace.cancelSell(1, {"from": account})
     # fails because canceled
-    with brownie.reverts("Token no longer for sale"):
+    with brownie.reverts("MarketPlace: Token no longer for sale"):
         marketplace.buy(1, {"from": acc1, "value": ONE})
 
     # fails because listing doesn't exist
-    with brownie.reverts("Listing doesn't exist"):
+    with brownie.reverts("MarketPlace: Listing doesn't exist"):
         marketplace.buy(3, {"from": acc1, "value": ONE})
 
     # should be able to buy your own stuff ERC721::transferFrom allows
@@ -409,7 +411,7 @@ def test_withdraw(marketplace, NFT1):
         + marketplace.balance()
     )
 
-    with brownie.reverts("Only the owner can withdraw"):
+    with brownie.reverts("MarketPlace: Only the owner can withdraw"):
         marketplace.withdraw(0, {"from": account})
 
 

@@ -111,22 +111,22 @@ def __init__():
 
 @external
 def setPostingFee(_newFee: uint256):
-    assert msg.sender == self.owner, "Only the owner can do that"
+    assert msg.sender == self.owner, "MarketPlace: Only the owner can do that"
     self.postingFee = _newFee
 
 @external
 def setSellingFee(_newFee: uint256):
-    assert msg.sender == self.owner, "Only the owner can do that"
+    assert msg.sender == self.owner, "MarketPlace: Only the owner can do that"
     self.sellingFee = _newFee
 
 @external
 def setMarketCoin(_marketCoinAddress: address):
-    assert msg.sender == self.owner, "Only the owner can do that"
+    assert msg.sender == self.owner, "MarketPlace: Only the owner can do that"
     self.marketCoin = _marketCoinAddress
 
 @external
 def setMarketNFT(_marketNFTAddress: address):
-    assert msg.sender == self.owner, "Only the owner can do that"
+    assert msg.sender == self.owner, "MarketPlace: Only the owner can do that"
     self.marketNFT = _marketNFTAddress
 
 
@@ -152,12 +152,12 @@ def _mintMarketCoin(_to: address, _amount: uint256):
 @payable
 @external
 def sell(_nft: address, _tokenId: uint256, _price: uint256):
-    assert msg.value >= self.postingFee, "Amount sent is below postingFee"
+    assert msg.value >= self.postingFee, "MarketPlace: Amount sent is below postingFee"
     # check that msg.sender is owner
-    assert msg.sender == NFToken(_nft).ownerOf(_tokenId), "Only the owner of the token can sell it"#TODO approved also
+    assert msg.sender == NFToken(_nft).ownerOf(_tokenId), "MarketPlace: Only the owner of the token can sell it"#TODO approved also
 
     # Check that we are operator for the seller nft
-    assert NFToken(_nft).isApprovedForAll(msg.sender, self), "The marketplace doesn't have authorization to sell this token for this user"
+    assert NFToken(_nft).isApprovedForAll(msg.sender, self), "MarketPlace: The marketplace doesn't have authorization to sell this token for this user"
 
     self._addListing(msg.sender, _nft, _tokenId, _price)
     log Posting(msg.sender, _price, _nft, _tokenId)
@@ -167,9 +167,9 @@ def sell(_nft: address, _tokenId: uint256, _price: uint256):
 def cancelSell(_id: uint256):
     # assert msg.value >= self.postingFee, "Amount sent is below cancellingFee"
     listing: Listing = self.idToListing[_id]
-    assert msg.sender == listing._seller, "Only the seller can cancel"
-    assert listing._status != 2, "Token already sold"
-    assert listing._status == 1, "Token not for sale (already cancel or doesn't exist)"
+    assert msg.sender == listing._seller, "MarketPlace: Only the seller can cancel"
+    assert listing._status != 2, "MarketPlace: Token already sold"
+    assert listing._status == 1, "MarketPlace: Token not for sale (already cancel or doesn't exist)"
     listing._status = 3  # cancel listing
     self.idToListing[_id] = listing #TODO test
     log ListingUpdated(_id, listing)
@@ -178,9 +178,9 @@ def cancelSell(_id: uint256):
 @external
 def updateSell(_id: uint256, _newPrice: uint256):
     listing: Listing = self.idToListing[_id]
-    assert listing._status == 1, "Token not for sale (already sold, cancel or doesn't exist)"
-    assert listing._seller == msg.sender, "Only the seller can update"
-    assert listing._price != _newPrice, "The price need to be different"
+    assert listing._status == 1, "MarketPlace: Token not for sale (already sold, cancel or doesn't exist)"
+    assert listing._seller == msg.sender, "MarketPlace: Only the seller can update"
+    assert listing._price != _newPrice, "MarketPlace: The price need to be different"
 
     listing._price = _newPrice
     self._updateListing(_id, listing)
@@ -191,12 +191,12 @@ def updateSell(_id: uint256, _newPrice: uint256):
 def buy(_id: uint256):
     listing: Listing = self.idToListing[_id]
     # token is for sale
-    assert listing._status != 0, "Listing doesn't exist"
-    assert listing._status == 1, "Token no longer for sale"
+    assert listing._status != 0, "MarketPlace: Listing doesn't exist"
+    assert listing._status == 1, "MarketPlace: Token no longer for sale"
 
     price: uint256 = listing._price
     # enough ether is sent
-    assert msg.value >= price, "Not enough ether sent"
+    assert msg.value >= price, "MarketPlace: Not enough ether sent"
 
     # Pay the seller
     seller: address = listing._seller
@@ -222,7 +222,7 @@ def buy(_id: uint256):
 
 @external
 def withdraw(_amount: uint256):
-    assert msg.sender == self.owner, "Only the owner can withdraw"
+    assert msg.sender == self.owner, "MarketPlace: Only the owner can withdraw"
     send(self.owner, _amount)
 
 
