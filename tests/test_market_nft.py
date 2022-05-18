@@ -52,9 +52,13 @@ def test_ownerOf(marketNFT):
 
 def test_setMintPrice(marketNFT):
     account = get_account()
+    acc1 = get_account(index=1)
     assert marketNFT.mintPrice() == MINT_PRICE
     marketNFT.setMintPrice(8, {"from": account})
     assert marketNFT.mintPrice() == 8
+
+    with brownie.reverts("MarketNFT: Only owner can do that"):
+        marketNFT.setMintPrice(42, {"from": acc1})
 
 
 def test_mint(marketNFT):
@@ -80,6 +84,16 @@ def test_mint(marketNFT):
     assert tx.events[0]["_from"] == ZERO_ADDRESS
     assert tx.events[0]["_to"] == account
     assert tx.events[0]["_tokenId"] == 2
+
+
+def test_mint_revert(marketNFT):
+    account = get_account()
+    acc1 = get_account(index=1)
+
+    with brownie.reverts("MarketNFT: Only owner can mint"):
+        marketNFT.mint(acc1, {"from": acc1})
+
+    marketNFT.mint(account, {"from": account})
 
 
 def test_approve(marketNFT):
