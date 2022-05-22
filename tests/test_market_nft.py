@@ -351,3 +351,11 @@ def test_add_token_revert(marketNFT):
     # fails because ZERO_ADDRESS can't receive NFT
     with brownie.reverts("MarketNFT: Can't transfer to null address"):
         marketNFT.mint(ZERO_ADDRESS, {"from": account})
+
+
+def test_supportsInterface(marketNFT):
+
+    assert marketNFT.supportsInterface(0x80AC58CD)  # ERC721
+    assert marketNFT.supportsInterface(0x5B5E139F) == False  # ERC721Metadata
+    assert marketNFT.supportsInterface(0x780E9D63) == False  # ERC721Enumerable
+    assert marketNFT.supportsInterface(0xFFFFFFFF) == False
