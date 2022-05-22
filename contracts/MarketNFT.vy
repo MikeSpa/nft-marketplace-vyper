@@ -40,7 +40,9 @@ ownerToApprovedForAll: public(HashMap[address, HashMap[address, bool]])  # mappi
 
 mintPrice: public(uint256)  # Mint price for an NFT
 
-#TODO add tokenURI to fully implements ERC721Metadata interface
+supportedInterface: public(HashMap[bytes32, bool])  # mapping interface -> bool
+
+#TODO add tokenURI to fully implements ERC721Metadata interface, ERC-165 identifier for this interface is 0x5b5e139f.
 
 @external
 def __init__(_owner: address, _mintPrice: uint256):
@@ -48,6 +50,7 @@ def __init__(_owner: address, _mintPrice: uint256):
     self.symbol = "MNFT"
     self.owner = _owner
     self.mintPrice = _mintPrice
+    self.supportedInterface[0x0000000000000000000000000000000000000000000000000000000080ac58cd] = True
 
 
 # @notice Count all NFTs assigned to an owner
@@ -209,11 +212,14 @@ def setApprovalForAll(_operator: address, _approved: bool):
 #  uses less than 30,000 gas.
 # @return `true` if the contract implements `_interfaceID` and
 #  `_interfaceID` is not 0xffffffff, `false` otherwise
-#TODO
+# _interfaceID needs to be of type bytes32 otherwise vyper doesn't think this implements ERC721
+# can't cast bytes32 into Bytes[4]
 @view
 @external
 def supportsInterface(_interfaceID: bytes32) -> bool:
-    return False
+    # interface_id: Bytes[4] = convert(_interfaceID, Bytes[4])
+    return self.supportedInterface[_interfaceID]
+
 
 # @notice Set a mint price
 # @param _newPrice The new mint price
