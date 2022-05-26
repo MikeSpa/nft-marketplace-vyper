@@ -118,7 +118,7 @@ def _removeToken(_from: address, _tokenId: uint256):
 @internal
 def _transfer(_from: address, _to: address, _tokenId: uint256):
     assert _to != ZERO_ADDRESS, "MarketNFT: Can't transfer to null address"
-    assert _tokenId < self.totalSupply, "MarketNFT: Token doesn't exist" # should never fails since we always check ownership/approval first
+    # assert _tokenId < self.totalSupply, "MarketNFT: Token doesn't exist" # should never fails since we always check ownership/approval first
     self._removeToken(_from, _tokenId)
     self._addToken(_to, _tokenId)
     log Transfer(_from, _to, _tokenId)
