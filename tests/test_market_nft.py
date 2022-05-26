@@ -277,6 +277,19 @@ def test_safeTransferFrom(marketNFT):
         marketNFT.safeTransferFrom(account, acc2, 1, {"from": acc1})
 
 
+def test_safeTransferFrom_to_contract(marketNFT):
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
+    marketNFT.mint(account, {"from": account})
+
+    # fails because contract not ERC721Receiver
+    with brownie.reverts():
+        marketNFT.safeTransferFrom(account, marketNFT, 1, {"from": account})
+
+
 def test_setApprovedForAll(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
