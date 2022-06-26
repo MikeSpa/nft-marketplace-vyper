@@ -124,12 +124,53 @@ def test_sell(marketplace, NFT1):
     assert tx.events[0]["_tokenId"] == 0
 
 
+def test_sell_approved(marketplace, NFT1):
+    account = get_account()
+    acc3 = get_account(index=3)
+    init_balance_account = account.balance()
+
+    # approve acc3 to transfer nft
+    tx = NFT1.approve(acc3, 0, {"from": account})
+    assert NFT1.getApproved(0) == acc3
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_owner"] == account
+    assert tx.events[0]["_approved"] == acc3
+    assert tx.events[0]["_tokenId"] == 0
+
+    # approve the marketplace as operator
+    tx = NFT1.setApprovalForAll(marketplace, True, {"from": acc3})
+    assert account.balance() == init_balance_account
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_owner"] == acc3
+    assert tx.events[0]["_operator"] == marketplace
+    assert tx.events[0]["_approved"] == True
+
+    # list the token
+    tx = marketplace.sell(NFT1.address, 0, ONE * 42, {"from": acc3})
+
+    # account remains the owner of the token
+    assert NFT1.ownerOf(0) == account
+
+    assert account.balance() == init_balance_account - marketplace.postingFee()
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_seller"] == acc3
+    assert tx.events[0]["_price"] == ONE * 42
+    assert tx.events[0]["_nft"] == NFT1
+    assert tx.events[0]["_tokenId"] == 0
+
+
 def test_sell_revert(marketplace, NFT1):
     account = get_account()
     owner = get_account(index=8)
 
     # fails because account don't own the token #10
-    with brownie.reverts("MarketPlace: Only the owner of the token can sell it"):
+    with brownie.reverts("MarketPlace: Only the approved of the token can sell it"):
         marketplace.sell(NFT1.address, 10, ONE * 42, {"from": account})
 
     # fails because marketplace not operator

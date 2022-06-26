@@ -87,7 +87,7 @@ struct Listing:
     _nft: address
     _tokenId: uint256
     _price: uint256
-    _status: uint8 # 0-DONT EXIST, 1-OPEN, 2-SOLD, 3-CANCELED
+    _status: uint8 # 0-DOESNT EXIST, 1-OPEN, 2-SOLD, 3-CANCELED
 
 
 currentId: public(uint256)
@@ -136,6 +136,7 @@ def _addListing(_seller: address, _nft: address, _tokenId: uint256, _price: uint
     id: uint256 = self.currentId
     self.idToListing[id] = listing
     self.currentId += 1
+    log Posting(_seller, _price, _nft, _tokenId)
 
 
 @internal
@@ -153,14 +154,15 @@ def _mintMarketCoin(_to: address, _amount: uint256):
 @external
 def sell(_nft: address, _tokenId: uint256, _price: uint256):
     assert msg.value >= self.postingFee, "MarketPlace: Amount sent is below postingFee"
-    # check that msg.sender is owner
-    assert msg.sender == NFToken(_nft).ownerOf(_tokenId), "MarketPlace: Only the owner of the token can sell it"#TODO approved also
+    # check that msg.sender is owner or approved
+    owner: address = NFToken(_nft).ownerOf(_tokenId)
+    assert msg.sender == owner or msg.sender == NFToken(_nft).getApproved(_tokenId) or NFToken(_nft).isApprovedForAll(owner, msg.sender), "MarketPlace: Only the approved of the token can sell it"
 
     # Check that we are operator for the seller nft
     assert NFToken(_nft).isApprovedForAll(msg.sender, self), "MarketPlace: The marketplace doesn't have authorization to sell this token for this user"
 
     self._addListing(msg.sender, _nft, _tokenId, _price)
-    log Posting(msg.sender, _price, _nft, _tokenId)
+    
 
 @payable
 @external
@@ -171,8 +173,7 @@ def cancelSell(_id: uint256):
     assert listing._status != 2, "MarketPlace: Token already sold"
     assert listing._status == 1, "MarketPlace: Token not for sale (already cancel or doesn't exist)"
     listing._status = 3  # cancel listing
-    self.idToListing[_id] = listing #TODO test
-    log ListingUpdated(_id, listing)
+    self._updateListing(_id, listing)
 
 @payable
 @external
