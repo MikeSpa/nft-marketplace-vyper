@@ -117,10 +117,74 @@ def test_mint_revert(marketNFT):
     account = get_account()
     acc1 = get_account(index=1)
 
-    with brownie.reverts("MarketNFT: Only owner can mint"):
+    with brownie.reverts("MarketNFT: Only owner of MarketNFT can mint"):
         marketNFT.mint(acc1, {"from": acc1})
 
     marketNFT.mint(account, {"from": account})
+
+
+def test_burn(marketNFT):
+    account = get_account()
+    acc1 = get_account(index=1)
+    marketNFT.mint(acc1, {"from": account})
+    marketNFT.mint(acc1, {"from": account})
+    marketNFT.mint(acc1, {"from": account})
+
+    assert marketNFT.balanceOf(acc1) == 3
+    assert marketNFT.ownerOf(0) == marketNFT.ownerOf(1) == marketNFT.ownerOf(2) == acc1
+    assert marketNFT.totalSupply() == 3
+    assert marketNFT.nextTokenId() == 3
+
+    tx = marketNFT.burn(1, {"from": account})
+
+    assert marketNFT.balanceOf(acc1) == 2
+    assert marketNFT.ownerOf(0) == marketNFT.ownerOf(2) == acc1
+    # fails because tokenId 1 doesn't exist anymore
+    with brownie.reverts("MarketNFT: Token doesn't exist"):
+        marketNFT.ownerOf(1)
+    assert marketNFT.totalSupply() == 2
+    assert marketNFT.nextTokenId() == 3
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == acc1
+    assert tx.events[0]["_to"] == ZERO_ADDRESS
+    assert tx.events[0]["_tokenId"] == 1
+
+    # mint continue at token 3
+    tx = marketNFT.mint(acc1, {"from": account})
+
+    # Test Event
+    assert len(tx.events) == 1
+    assert tx.events[0]["_from"] == ZERO_ADDRESS
+    assert tx.events[0]["_to"] == acc1
+    assert tx.events[0]["_tokenId"] == 3
+    assert marketNFT.balanceOf(acc1) == 3
+
+
+def test_burn_revert(marketNFT):
+    account = get_account()
+    acc1 = get_account(index=1)
+    marketNFT.mint(acc1, {"from": account})
+    marketNFT.mint(acc1, {"from": account})
+    marketNFT.mint(acc1, {"from": account})
+
+    assert marketNFT.balanceOf(acc1) == 3
+    assert marketNFT.ownerOf(0) == marketNFT.ownerOf(1) == marketNFT.ownerOf(2) == acc1
+    assert marketNFT.totalSupply() == 3
+    assert marketNFT.nextTokenId() == 3
+
+    # fails because tokenId 3 doesn't exist
+    with brownie.reverts():
+        marketNFT.burn(3, {"from": account})
+    # fails because acc1 not owner of MarketNFT
+    with brownie.reverts("MarketNFT: Only owner of MarketNFT can burn"):
+        marketNFT.burn(0, {"from": acc1})
+
+    marketNFT.burn(0, {"from": account})
+    # fails because tokenId 0 doesn't exist anymore (already burnt)
+    with brownie.reverts():
+        marketNFT.burn(0, {"from": account})
 
 
 def test_approve(marketNFT):

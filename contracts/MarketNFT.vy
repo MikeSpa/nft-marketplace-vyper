@@ -32,6 +32,7 @@ name: public(String[9])  # Name of the collection: "MarketNFT"
 symbol: public(String[4])  # Symbol of the collection: "MNFT"
 owner: public(address)  # Owner of the contract, can mint NFT
 totalSupply: public(uint256)  # Total number of NFT
+nextTokenId: public(uint256)  # Id of the next token which will be minted
 
 ownerToCount: public(HashMap[address, uint256])  # mapping owner -> # of NFT in this collection
 idToOwner: public(HashMap[uint256, address])  # mapping tokenId -> owner
@@ -230,9 +231,25 @@ def setMintPrice(_newPrice: uint256):
 
 # @notice Mint an NFT
 # @param _to The address that will receive the NFT
-# @dev An NFT can only be mint by the owner, e.g. a marketplace. Necessary checks need to be done there
+# @dev An NFT can only be mint by the owner, e.g. a marketplace.
 @external
 def mint(_to: address):
-    assert msg.sender == self.owner, "MarketNFT: Only owner can mint"
-    self._addToken(_to, self.totalSupply)
-    log Transfer(ZERO_ADDRESS, _to, self.totalSupply-1)
+    assert msg.sender == self.owner, "MarketNFT: Only owner of MarketNFT can mint"
+    newTokenId: uint256 = self.nextTokenId
+    self._addToken(_to, newTokenId)
+    self.nextTokenId += 1
+    log Transfer(ZERO_ADDRESS, _to, newTokenId)
+
+
+
+# @notice Burn an NFT
+# @param _tokenId The id of the token to burn
+# @dev An NFT can only be burn by the owner, e.g. a marketplace.
+@external
+def burn(_tokenId: uint256):
+    assert msg.sender == self.owner, "MarketNFT: Only owner of MarketNFT can burn"
+    previousOwner: address = self.idToOwner[_tokenId]
+    self._removeToken(self.idToOwner[_tokenId], _tokenId)
+    log Transfer(previousOwner, ZERO_ADDRESS, _tokenId)
+
+
