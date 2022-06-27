@@ -325,6 +325,55 @@ def test_buy(marketplace, NFT1):
     assert tx.events[4]["_tokenId"] == 0
 
 
+def test_buy_seller(marketplace, NFT1):
+    account = get_account()
+
+    init_balance_account = account.balance()
+
+    # Sell
+    NFT1.setApprovalForAll(marketplace, True)
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": 0})
+    priceNFT = marketplace.idToListing(0)[3]
+    # Ownership
+    assert NFT1.ownerOf(0) == account
+
+    # Buy
+    tx = marketplace.buy(0, {"from": account, "value": priceNFT})
+
+    # Money
+    assert account.balance() == init_balance_account
+    # Ownership
+    assert NFT1.ownerOf(0) == account
+
+    # Test Event
+    assert len(tx.events) == 5
+    ## Transfer of NFT
+    assert tx.events[0]["_from"] == account
+    assert tx.events[0]["_to"] == account
+    assert tx.events[0]["_tokenId"] == 0
+
+    ## Test Transfer Event - Mint MarketCoin to seller
+    assert tx.events[1]["_from"] == ZERO_ADDRESS
+    assert tx.events[1]["_to"] == account
+    assert tx.events[1]["_value"] == ONE / 10
+
+    ## Test Transfer Event - Mint MarketCoin to buyer
+    assert tx.events[2]["_from"] == ZERO_ADDRESS
+    assert tx.events[2]["_to"] == account
+    assert tx.events[2]["_value"] == ONE / 10
+
+    ## Update Listing
+    assert tx.events[3]["_id"] == 0
+    assert tx.events[3]["_listing"][4] == 2
+
+    ## Sale
+    assert tx.events[4]["_seller"] == account
+    assert tx.events[4]["_buyer"] == account
+    assert tx.events[4]["_price"] == ONE
+    assert tx.events[4]["_nft"] == NFT1
+    assert tx.events[4]["_tokenId"] == 0
+
+
 def test_buy_revert(marketplace, NFT1):
     account = get_account()
     acc1 = get_account(index=1)

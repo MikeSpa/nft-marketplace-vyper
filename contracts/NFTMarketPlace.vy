@@ -131,12 +131,13 @@ def setMarketNFT(_marketNFTAddress: address):
 
 
 @internal
-def _addListing(_seller: address, _nft: address, _tokenId: uint256, _price: uint256):
+def _addListing(_seller: address, _nft: address, _tokenId: uint256, _price: uint256) -> uint256:
     listing: Listing = Listing({_seller: _seller, _nft: _nft, _tokenId: _tokenId, _price: _price, _status: 1})
     id: uint256 = self.currentId
     self.idToListing[id] = listing
     self.currentId += 1
     log Posting(_seller, _price, _nft, _tokenId)
+    return id
 
 
 @internal
@@ -152,7 +153,7 @@ def _mintMarketCoin(_to: address, _amount: uint256):
 
 @payable
 @external
-def sell(_nft: address, _tokenId: uint256, _price: uint256):
+def sell(_nft: address, _tokenId: uint256, _price: uint256) -> uint256:
     assert msg.value >= self.postingFee, "MarketPlace: Amount sent is below postingFee"
     # check that msg.sender is owner or approved
     owner: address = NFToken(_nft).ownerOf(_tokenId)
@@ -161,7 +162,8 @@ def sell(_nft: address, _tokenId: uint256, _price: uint256):
     # Check that we are operator for the seller nft
     assert NFToken(_nft).isApprovedForAll(msg.sender, self), "MarketPlace: The marketplace doesn't have authorization to sell this token for this user"
 
-    self._addListing(msg.sender, _nft, _tokenId, _price)
+    id: uint256 = self._addListing(msg.sender, _nft, _tokenId, _price)
+    return id
     
 
 @payable

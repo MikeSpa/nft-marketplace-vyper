@@ -1,6 +1,8 @@
 from scripts.helpful_scripts import ZERO_ADDRESS, get_account, ONE, POINT_ONE, CENT
 import brownie
 from brownie import Contract, MarketCoin, MarketNFT
+import numpy as np
+from decimal import *
 import pytest
 from brownie.test import given, strategy
 from hypothesis import settings
@@ -74,3 +76,63 @@ def test_sell(NFT1, marketplace, _value, _tokenId):
     assert tx.events[0]["_price"] == _value
     assert tx.events[0]["_nft"] == NFT1
     assert tx.events[0]["_tokenId"] == _tokenId
+
+
+@brownie.test.given(
+    _value=strategy("uint256", max_value=99000000000000000000),
+    _tokenId=strategy("uint256", max_value=9),
+    _buyer=strategy("address", exclude=ACCOUNT),
+)
+def test_buy(NFT1, marketplace, _value, _tokenId, _buyer):
+    account = get_account()
+
+    init_balance_account = account.balance()
+    init_balance_buyer = _buyer.balance()
+
+    # Sell
+    NFT1.setApprovalForAll(marketplace, True)
+    id = marketplace.sell(
+        NFT1.address, _tokenId, _value, {"from": account}
+    ).return_value
+    priceNFT = marketplace.idToListing(id)[3]
+    assert priceNFT == _value
+    # Ownership
+    assert NFT1.ownerOf(_tokenId) == account
+    # Buy
+    tx = marketplace.buy(id, {"from": _buyer, "value": priceNFT})
+
+    # Money
+    assert (
+        account.balance() == init_balance_account + priceNFT - marketplace.postingFee()
+    )
+    assert _buyer.balance() == init_balance_buyer - priceNFT
+    # Ownership
+    assert NFT1.ownerOf(_tokenId) == _buyer
+
+    # Test Event
+    assert len(tx.events) == 5
+    ## Transfer of NFT
+    assert tx.events[0]["_from"] == account
+    assert tx.events[0]["_to"] == _buyer
+    assert tx.events[0]["_tokenId"] == _tokenId
+
+    ## Test Transfer Event - Mint MarketCoin to seller
+    assert tx.events[1]["_from"] == ZERO_ADDRESS
+    assert tx.events[1]["_to"] == account
+    assert tx.events[1]["_value"] == np.floor(Decimal(_value) / 10)
+
+    ## Test Transfer Event - Mint MarketCoin to buyer
+    assert tx.events[2]["_from"] == ZERO_ADDRESS
+    assert tx.events[2]["_to"] == _buyer
+    assert tx.events[2]["_value"] == np.floor(Decimal(_value) / 10)
+
+    ## Update Listing
+    assert tx.events[3]["_id"] == id
+    assert tx.events[3]["_listing"][4] == 2
+
+    ## Sale
+    assert tx.events[4]["_seller"] == account
+    assert tx.events[4]["_buyer"] == _buyer
+    assert tx.events[4]["_price"] == _value
+    assert tx.events[4]["_nft"] == NFT1
+    assert tx.events[4]["_tokenId"] == _tokenId
