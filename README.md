@@ -27,12 +27,3 @@ Custom ERC-721 token for the marketplace, user can mint it on the marketplace wi
 ## Test
 Every contract has unit tests written in python with pytest and property-based test with hypothesis.
 
-
-## TODO
-- [x]: add comment to MarketNFT
-- [ ] add Bid functionality + test
-- [x]: add MarketCoin in MarketPlace
-- [ ]: ERC721Metadata for MarketNFT
-- [x]: improve test coverage for marketplace
-- [x]: MarketNFT::safeTransferFrom()
-- [x]: coverage for MarketNFT

@@ -141,10 +141,11 @@ def _addListing(_seller: address, _nft: address, _tokenId: uint256, _price: uint
 
 
 @internal
-def _updateListing(_listingId: uint256, _listing: Listing):
+def _updateListing(_listingId: uint256, _listing: Listing) -> uint256:
     # listing: Listing = _listing
     self.idToListing[_listingId] = _listing
     log ListingUpdated(_listingId, _listing)
+    return _listingId
 
 @internal
 def _mintMarketCoin(_to: address, _amount: uint256):
@@ -168,30 +169,32 @@ def sell(_nft: address, _tokenId: uint256, _price: uint256) -> uint256:
 
 @payable
 @external
-def cancelSell(_id: uint256):
+def cancelSell(_id: uint256) -> uint256:
     # assert msg.value >= self.postingFee, "Amount sent is below cancellingFee"
     listing: Listing = self.idToListing[_id]
     assert msg.sender == listing._seller, "MarketPlace: Only the seller can cancel"
     assert listing._status != 2, "MarketPlace: Token already sold"
     assert listing._status == 1, "MarketPlace: Token not for sale (already cancel or doesn't exist)"
     listing._status = 3  # cancel listing
-    self._updateListing(_id, listing)
+    id: uint256 = self._updateListing(_id, listing)
+    return id
 
 @payable
 @external
-def updateSell(_id: uint256, _newPrice: uint256):
+def updateSell(_id: uint256, _newPrice: uint256) -> uint256:
     listing: Listing = self.idToListing[_id]
     assert listing._status == 1, "MarketPlace: Token not for sale (already sold, cancel or doesn't exist)"
     assert listing._seller == msg.sender, "MarketPlace: Only the seller can update"
     assert listing._price != _newPrice, "MarketPlace: The price need to be different"
 
     listing._price = _newPrice
-    self._updateListing(_id, listing)
+    id: uint256 = self._updateListing(_id, listing)
+    return id
 
 
 @payable
 @external
-def buy(_id: uint256):
+def buy(_id: uint256) -> uint256:
     listing: Listing = self.idToListing[_id]
     # token is for sale
     assert listing._status != 0, "MarketPlace: Listing doesn't exist"
@@ -218,9 +221,10 @@ def buy(_id: uint256):
     # Update Listing
     newStatus: uint8 = 2
     listing._status = newStatus
-    self._updateListing(_id, listing)
+    id: uint256 = self._updateListing(_id, listing)
 
     log Sale(seller, msg.sender, price, nft, listing._tokenId)
+    return id
 
 
 @external
@@ -240,7 +244,7 @@ def mintMarketNFT():
     
 
 
-#TODO handle if seller transfer nft
+#TODO handle if seller transfer nft -> check in the front end if seller still owner
 
 
 

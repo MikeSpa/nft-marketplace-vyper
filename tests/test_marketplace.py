@@ -374,6 +374,34 @@ def test_buy_seller(marketplace, NFT1):
     assert tx.events[4]["_tokenId"] == 0
 
 
+def test_buy_already_transfered(marketplace, NFT1):
+    account = get_account()
+    acc1 = get_account(index=1)
+    acc2 = get_account(index=2)
+
+    init_balance_account = account.balance()
+    init_balance_acc1 = acc1.balance()
+
+    # Sell
+    NFT1.setApprovalForAll(marketplace, True)
+    marketplace.sell(NFT1.address, 0, ONE, {"from": account, "value": 0})
+    priceNFT = marketplace.idToListing(0)[3]
+    # Ownership
+    assert NFT1.ownerOf(0) == account
+
+    ### TRANSFER ###
+    NFT1.transferFrom(account, acc2, 0, {"from": account})
+    # Buy
+    with brownie.reverts():
+        tx = marketplace.buy(0, {"from": acc1, "value": priceNFT})
+
+    # Money
+    assert account.balance() == init_balance_account
+    assert acc1.balance() == init_balance_acc1
+    # Ownership
+    assert NFT1.ownerOf(0) == acc2
+
+
 def test_buy_revert(marketplace, NFT1):
     account = get_account()
     acc1 = get_account(index=1)
